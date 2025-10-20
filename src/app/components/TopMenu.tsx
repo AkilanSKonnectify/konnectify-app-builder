@@ -23,34 +23,11 @@ export default function TopMenu() {
   };
 
   return (
-    <div
-      style={{
-        height: "40px",
-        backgroundColor: "#2d2d30",
-        borderBottom: "1px solid #1e1e1e",
-        display: "flex",
-        alignItems: "center",
-        padding: "0 16px",
-        gap: "4px",
-      }}
-    >
+    <div className="h-10 bg-[#2d2d30] border-b border-[#1e1e1e] flex items-center px-4 gap-1">
       <button
         onClick={createNewFile}
         title="New File (Ctrl+N)"
-        style={{
-          padding: "6px 8px",
-          backgroundColor: "transparent",
-          color: "#cccccc",
-          border: "none",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          fontSize: "13px",
-          transition: "background-color 0.1s",
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3e3e42")}
-        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+        className="px-2 py-1.5 bg-transparent text-[#cccccc] border-none cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]"
       >
         <FilePlus size={16} />
         <span>New File</span>
@@ -59,20 +36,7 @@ export default function TopMenu() {
       <button
         onClick={handleUploadClick}
         title="Open File (Ctrl+O)"
-        style={{
-          padding: "6px 8px",
-          backgroundColor: "transparent",
-          color: "#cccccc",
-          border: "none",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          fontSize: "13px",
-          transition: "background-color 0.1s",
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3e3e42")}
-        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+        className="px-2 py-1.5 bg-transparent text-[#cccccc] border-none cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]"
       >
         <Upload size={16} />
         <span>Open File</span>
@@ -83,7 +47,7 @@ export default function TopMenu() {
         type="file"
         accept=".ts,.tsx,.js,.jsx,.json,.html,.css,.md,.txt,.py,.java,.cpp,.c,.go,.rs,.php,.rb,.sql,.xml,.yaml,.yml"
         onChange={handleFileChange}
-        style={{ display: "none" }}
+        className="hidden"
       />
     </div>
   );

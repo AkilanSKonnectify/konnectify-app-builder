@@ -10,16 +10,7 @@ export default function TabBar() {
   const getFileById = (id: string) => files.find((f) => f.id === id);
 
   return (
-    <div
-      style={{
-        height: "35px",
-        backgroundColor: "#2d2d30",
-        borderBottom: "1px solid #1e1e1e",
-        display: "flex",
-        alignItems: "stretch",
-        overflow: "auto",
-      }}
-    >
+    <div className="h-[35px] bg-[#2d2d30] border-b border-[#1e1e1e] flex items-stretch overflow-auto">
       {openTabs.map((tabId) => {
         const file = getFileById(tabId);
         if (!file) return null;
@@ -29,20 +20,11 @@ export default function TabBar() {
         return (
           <div
             key={tabId}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "0 12px",
-              backgroundColor: isActive ? "#1e1e1e" : "#2d2d30",
-              borderRight: "1px solid #1e1e1e",
-              color: isActive ? "#ffffff" : "#969696",
-              cursor: "pointer",
-              fontSize: "13px",
-              minWidth: "120px",
-            }}
+            className={`flex items-center gap-2 px-3 border-r border-[#1e1e1e] cursor-pointer text-[13px] min-w-[120px] ${
+              isActive ? "bg-[#1e1e1e] text-white" : "bg-[#2d2d30] text-[#969696]"
+            }`}
           >
-            <div onClick={() => setActiveFile(tabId)} style={{ flex: 1 }}>
+            <div onClick={() => setActiveFile(tabId)} className="flex-1">
               {file.name}
             </div>
             <button
@@ -50,15 +32,7 @@ export default function TabBar() {
                 e.stopPropagation();
                 closeTab(tabId);
               }}
-              style={{
-                background: "none",
-                border: "none",
-                color: "inherit",
-                cursor: "pointer",
-                padding: "2px",
-                display: "flex",
-                alignItems: "center",
-              }}
+              className="bg-none border-none text-inherit cursor-pointer p-0.5 flex items-center"
             >
               <X size={14} />
             </button>

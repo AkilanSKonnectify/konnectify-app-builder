@@ -23,16 +23,16 @@ export default function EditorLayout() {
   const isMac = typeof navigator !== "undefined" && navigator.platform.toUpperCase().includes("MAC");
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+    <div className="h-screen flex flex-col">
       <TopMenu />
 
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div className="flex-1 flex overflow-hidden">
         <FileSidebar />
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <div className="flex-1 flex flex-col">
           <TabBar />
 
-          <div style={{ flex: 1, backgroundColor: "#1e1e1e" }}>
+          <div className="flex-1 bg-[#1e1e1e]">
             {activeFile ? (
               <MonacoEditor
                 fileId={activeFile.id}
@@ -42,97 +42,29 @@ export default function EditorLayout() {
                 language={activeFile.language}
               />
             ) : (
-              <div
-                style={{
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#858585",
-                }}
-              >
-                <div
-                  style={{
-                    textAlign: "center",
-                    maxWidth: "400px",
-                  }}
-                >
-                  <h2
-                    style={{
-                      fontSize: "20px",
-                      marginBottom: "12px",
-                      color: "#cccccc",
-                      fontWeight: "normal",
-                    }}
-                  >
-                    No file open
-                  </h2>
-                  <p
-                    style={{
-                      fontSize: "13px",
-                      marginBottom: "24px",
-                      lineHeight: "1.6",
-                    }}
-                  >
+              <div className="h-full flex flex-col items-center justify-center text-[#858585]">
+                <div className="text-center max-w-[400px]">
+                  <h2 className="text-xl mb-3 text-[#cccccc] font-normal">No file open</h2>
+                  <p className="text-[13px] mb-6 leading-[1.6]">
                     Create a new file or upload an existing one to get started
                   </p>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "12px",
-                      justifyContent: "center",
-                      flexWrap: "wrap",
-                    }}
-                  >
+                  <div className="flex gap-3 justify-center flex-wrap">
                     <button
                       onClick={createNewFile}
-                      style={{
-                        padding: "10px 16px",
-                        backgroundColor: "#0e639c",
-                        color: "#ffffff",
-                        border: "none",
-                        cursor: "pointer",
-                        fontSize: "13px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        borderRadius: "2px",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1177bb")}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#0e639c")}
+                      className="px-4 py-2.5 bg-[#0e639c] text-white border-none cursor-pointer text-[13px] flex items-center gap-2 rounded-[2px] hover:bg-[#1177bb] transition-colors"
                     >
                       <FilePlus size={16} />
                       New File
                     </button>
                     <button
                       onClick={createNewFile}
-                      style={{
-                        padding: "10px 16px",
-                        backgroundColor: "#0e639c",
-                        color: "#ffffff",
-                        border: "none",
-                        cursor: "pointer",
-                        fontSize: "13px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        borderRadius: "2px",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1177bb")}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#0e639c")}
+                      className="px-4 py-2.5 bg-[#0e639c] text-white border-none cursor-pointer text-[13px] flex items-center gap-2 rounded-[2px] hover:bg-[#1177bb] transition-colors"
                     >
                       <FilePlus size={16} />
                       New File
                     </button>
                   </div>
-                  <div
-                    style={{
-                      marginTop: "20px",
-                      fontSize: "12px",
-                      color: "#6e6e6e",
-                    }}
-                  >
+                  <div className="mt-5 text-xs text-[#6e6e6e]">
                     <div>{isMac ? "Command" : "Ctrl"} + Alt + N - New file</div>
                     <div>{isMac ? "Command" : "Ctrl"} + Alt + O - Open file</div>
                   </div>

@@ -71,7 +71,7 @@ export default function MonacoEditor({ fileId, code, onChange, filename, languag
   }, [fileId, language]);
 
   return (
-    <div style={{ height: "100%", width: "100%" }}>
+    <div className="h-full w-full">
       <Editor
         height="100%"
         language={language}
