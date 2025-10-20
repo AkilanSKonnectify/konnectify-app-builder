@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 
 export interface FileData {
   id: string;
@@ -32,34 +32,34 @@ interface EditorContextType {
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'vscode-editor-state';
+const STORAGE_KEY = "vscode-editor-state";
 
 const getLanguageFromFilename = (filename: string): string => {
-  const ext = filename.split('.').pop()?.toLowerCase();
+  const ext = filename.split(".").pop()?.toLowerCase();
   const languageMap: Record<string, string> = {
-    ts: 'typescript',
-    tsx: 'typescript',
-    js: 'javascript',
-    jsx: 'javascript',
-    json: 'json',
-    html: 'html',
-    css: 'css',
-    scss: 'scss',
-    md: 'markdown',
-    py: 'python',
-    java: 'java',
-    cpp: 'cpp',
-    c: 'c',
-    go: 'go',
-    rs: 'rust',
-    php: 'php',
-    rb: 'ruby',
-    sql: 'sql',
-    xml: 'xml',
-    yaml: 'yaml',
-    yml: 'yaml',
+    ts: "typescript",
+    tsx: "typescript",
+    js: "javascript",
+    jsx: "javascript",
+    json: "json",
+    html: "html",
+    css: "css",
+    scss: "scss",
+    md: "markdown",
+    py: "python",
+    java: "java",
+    cpp: "cpp",
+    c: "c",
+    go: "go",
+    rs: "rust",
+    php: "php",
+    rb: "ruby",
+    sql: "sql",
+    xml: "xml",
+    yaml: "yaml",
+    yml: "yaml",
   };
-  return languageMap[ext || ''] || 'plaintext';
+  return languageMap[ext || ""] || "plaintext";
 };
 
 export const EditorProvider = ({ children }: { children: ReactNode }) => {
@@ -77,7 +77,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         setOpenTabs(parsed.openTabs || []);
         setActiveFileId(parsed.activeFileId || null);
       } catch (error) {
-        console.error('Failed to load editor state:', error);
+        console.error("Failed to load editor state:", error);
       }
     }
     setIsInitialized(true);
@@ -96,23 +96,23 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
 
   const addFile = useCallback((file: FileData) => {
     setFiles((prev) => {
-      if (prev.some(f => f.id === file.id)) {
+      if (prev.some((f) => f.id === file.id)) {
         return prev;
       }
       return [...prev, file];
     });
     openFile(file.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const removeFile = useCallback((id: string) => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
     closeTab(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateFileContent = useCallback((id: string, content: string) => {
-    setFiles((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, content } : f))
-    );
+    setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, content } : f)));
   }, []);
 
   const renameFile = useCallback((id: string, newName: string) => {
@@ -139,65 +139,71 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  const closeTab = useCallback((id: string) => {
-    setOpenTabs((prev) => {
-      const newTabs = prev.filter((tabId) => tabId !== id);
-      if (activeFileId === id) {
-        setActiveFileId(newTabs.length > 0 ? newTabs[newTabs.length - 1] : null);
-      }
-      return newTabs;
-    });
-  }, [activeFileId]);
+  const closeTab = useCallback(
+    (id: string) => {
+      setOpenTabs((prev) => {
+        const newTabs = prev.filter((tabId) => tabId !== id);
+        if (activeFileId === id) {
+          setActiveFileId(newTabs.length > 0 ? newTabs[newTabs.length - 1] : null);
+        }
+        return newTabs;
+      });
+    },
+    [activeFileId]
+  );
 
   const setActiveFileHandler = useCallback((id: string) => {
     setActiveFileId(id);
   }, []);
 
   const createNewFile = useCallback(() => {
-    const existingUntitled = files.filter(f => f.name.startsWith('untitled'));
+    const existingUntitled = files.filter((f) => f.name.startsWith("untitled"));
     const nextNumber = existingUntitled.length + 1;
     const newFileName = `untitled${nextNumber}.ts`;
 
     const newFile: FileData = {
       id: `file-${Date.now()}-${Math.random()}`,
       name: newFileName,
-      content: '',
-      language: 'typescript',
+      content: "",
+      language: "typescript",
     };
 
     addFile(newFile);
   }, [files, addFile]);
 
-  const uploadFile = useCallback(async (file: File) => {
-    try {
-      const content = await file.text();
-      const language = getLanguageFromFilename(file.name);
+  const uploadFile = useCallback(
+    async (file: File) => {
+      try {
+        const content = await file.text();
+        const language = getLanguageFromFilename(file.name);
 
-      const newFile: FileData = {
-        id: `file-${Date.now()}-${Math.random()}`,
-        name: file.name,
-        content,
-        language,
-      };
+        const newFile: FileData = {
+          id: `file-${Date.now()}-${Math.random()}`,
+          name: file.name,
+          content,
+          language,
+        };
 
-      addFile(newFile);
-    } catch (error) {
-      console.error('Failed to upload file:', error);
-    }
-  }, [addFile]);
+        addFile(newFile);
+      } catch (error) {
+        console.error("Failed to upload file:", error);
+      }
+    },
+    [addFile]
+  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === 'n') {
+      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === "n") {
         e.preventDefault();
         createNewFile();
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.altKey &&  e.key === 'o') {
+      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === "o") {
         e.preventDefault();
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.ts,.tsx,.js,.jsx,.json,.html,.css,.md,.txt';
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".ts,.tsx,.js,.jsx,.json,.html,.css,.md,.txt";
         input.onchange = async (event) => {
           const file = (event.target as HTMLInputElement).files?.[0];
           if (file) {
@@ -206,15 +212,16 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         };
         input.click();
       }
-      
-      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === 'w') {
+
+      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key === "w") {
         e.preventDefault();
-        closeTab();
+        closeTab(activeFileId!);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [createNewFile, uploadFile]);
 
   return (
@@ -242,7 +249,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
 export const useEditor = () => {
   const context = useContext(EditorContext);
   if (!context) {
-    throw new Error('useEditor must be used within EditorProvider');
+    throw new Error("useEditor must be used within EditorProvider");
   }
   return context;
 };
