@@ -135,7 +135,7 @@ export default function TopMenu() {
         <button
           onClick={() => setIsDeployModalOpen(true)}
           title="New File (Ctrl+N)"
-          className="m-1 px-2 py-1.5 bg-transparent text-[#cccccc] border rounded-full border-[#cccccc] cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]"
+          className="m-1 px-1.5 py-1 bg-transparent text-[#cccccc] border rounded-full border-[#cccccc] cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]"
         >
           <Github size={16} />
           <span>Publish</span>

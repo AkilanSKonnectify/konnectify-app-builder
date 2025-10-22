@@ -8,7 +8,6 @@ import TabBar from "@/components/EditorComponents/TabBar";
 import MonacoEditor from "./MonacoEditor";
 import RightPanel from "@/components/Testers/RightPanel";
 import { FilePlus, Upload } from "lucide-react";
-import LogConsole from "@/components/Logs/LogConsole";
 
 export default function EditorLayout() {
   const { files, activeFileId, updateFileContent, createNewFile, uploadFile } = useEditor();
