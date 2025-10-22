@@ -1,22 +1,37 @@
 "use client";
 
-import React from "react";
-import { useEditor } from "@/app/context/EditorContext";
-import TopMenu from "./TopMenu";
+import React, { useRef } from "react";
+import { useEditor } from "@/context/EditorContext";
+import TopMenu from "@/components/EditorComponents/TopMenu";
 import FileSidebar from "./FileSidebar";
-import TabBar from "./TabBar";
+import TabBar from "@/components/EditorComponents/TabBar";
 import MonacoEditor from "./MonacoEditor";
-import RightPanel from "./RightPanel";
+import RightPanel from "@/components/Testers/RightPanel";
 import { FilePlus, Upload } from "lucide-react";
 
 export default function EditorLayout() {
-  const { files, activeFileId, updateFileContent, createNewFile } = useEditor();
+  const { files, activeFileId, updateFileContent, createNewFile, uploadFile } = useEditor();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeFile = files.find((f) => f.id === activeFileId);
 
   const handleEditorChange = (value: string | undefined) => {
     if (activeFileId && value !== undefined) {
       updateFileContent(activeFileId, value);
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await uploadFile(file);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -57,12 +72,19 @@ export default function EditorLayout() {
                       New File
                     </button>
                     <button
-                      onClick={createNewFile}
+                      onClick={handleUploadClick}
                       className="px-4 py-2.5 bg-[#0e639c] text-white border-none cursor-pointer text-[13px] flex items-center gap-2 rounded-[2px] hover:bg-[#1177bb] transition-colors"
                     >
                       <FilePlus size={16} />
-                      New File
+                      Open File
                     </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".ts,.tsx,.js,.jsx,.json,.html,.css,.md,.txt,.py,.java,.cpp,.c,.go,.rs,.php,.rb,.sql,.xml,.yaml,.yml"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
                   </div>
                   <div className="mt-5 text-xs text-[#6e6e6e]">
                     <div>{isMac ? "Command" : "Ctrl"} + Alt + N - New file</div>

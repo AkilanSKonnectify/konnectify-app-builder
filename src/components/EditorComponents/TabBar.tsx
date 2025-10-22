@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useEditor } from "@/app/context/EditorContext";
+import { useEditor } from "@/context/EditorContext";
 import { X } from "lucide-react";
 
 export default function TabBar() {
