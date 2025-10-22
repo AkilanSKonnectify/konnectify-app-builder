@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
-import { useEditor } from "@/app/context/EditorContext";
+import { useEditor } from "@/context/EditorContext";
 import { FilePlus, Upload } from "lucide-react";
 
 export default function TopMenu() {

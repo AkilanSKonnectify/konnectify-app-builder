@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useEditor } from "@/app/context/EditorContext";
+import { useEditor } from "@/context/EditorContext";
 import { File, Trash2 } from "lucide-react";
 
 export default function FileSidebar() {

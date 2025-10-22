@@ -3,6 +3,7 @@
 import React, { useRef, useEffect } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
+import { useSetupKonnectifyDSL } from "@/hooks/useSetupKonnectifyDSL";
 
 interface MonacoEditorProps {
   fileId: string;
@@ -21,6 +22,7 @@ export default function MonacoEditor({ fileId, code, onChange, filename, languag
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+    // useSetupKonnectifyDSL(monaco);
 
     let model = editorModels.get(fileId);
 
@@ -51,7 +53,7 @@ export default function MonacoEditor({ fileId, code, onChange, filename, languag
         editorRef.current.setModel(model);
       } else {
         const uri = monacoRef.current.Uri.parse(`file:///${fileId}`);
-        model = monacoRef.current.editor.createModel(code, language, uri);
+        model = monacoRef.current.editor.getModel(uri) || monacoRef.current.editor.createModel(code, language, uri);
         editorModels.set(fileId, model);
         editorRef.current.setModel(model);
       }
