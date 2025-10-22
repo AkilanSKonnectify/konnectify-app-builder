@@ -8,6 +8,7 @@ import TabBar from "@/components/EditorComponents/TabBar";
 import MonacoEditor from "./MonacoEditor";
 import RightPanel from "@/components/Testers/RightPanel";
 import { FilePlus, Upload } from "lucide-react";
+import LogConsole from "../Logs/LogConsole";
 
 export default function EditorLayout() {
   const { files, activeFileId, updateFileContent, createNewFile, uploadFile } = useEditor();
@@ -75,7 +76,7 @@ export default function EditorLayout() {
                       onClick={handleUploadClick}
                       className="px-4 py-2.5 bg-[#0e639c] text-white border-none cursor-pointer text-[13px] flex items-center gap-2 rounded-[2px] hover:bg-[#1177bb] transition-colors"
                     >
-                      <FilePlus size={16} />
+                      <Upload size={16} />
                       Open File
                     </button>
                     <input
@@ -94,6 +95,7 @@ export default function EditorLayout() {
               </div>
             )}
           </div>
+          <LogConsole />
         </div>
 
         <RightPanel />

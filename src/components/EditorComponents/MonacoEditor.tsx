@@ -4,7 +4,6 @@ import React, { useRef, useEffect } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import { useSetupKonnectifyDSL } from "@/hooks/useSetupKonnectifyDSL";
-import LogConsole from "../Logs/LogConsole";
 
 interface MonacoEditorProps {
   fileId: string;
@@ -90,7 +89,6 @@ export default function MonacoEditor({ fileId, code, onChange, filename, languag
           wordWrap: "on",
         }}
       />
-      <LogConsole />
     </div>
   );
 }
