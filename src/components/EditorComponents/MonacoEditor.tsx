@@ -22,7 +22,6 @@ export default function MonacoEditor({ fileId, code, onChange, filename, languag
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
-    // useSetupKonnectifyDSL(monaco);
 
     let model = editorModels.get(fileId);
 
