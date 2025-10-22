@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import ConnectionTester from "./Connections/ConnectionTester";
 
 type TabType = "connection" | "trigger" | "actions";
 
@@ -19,7 +20,8 @@ export default function RightPanelTabs() {
         return (
           <div className="p-4 text-[#cccccc]">
             <h3 className="text-sm mb-3 text-white">Connection Settings</h3>
-            <p className="text-xs">Configure your connection settings here.</p>
+            <p className="text-xs">Configure your connection and test it here.</p>
+            <ConnectionTester />
           </div>
         );
       case "trigger":

@@ -8,6 +8,7 @@ import TabBar from "@/components/EditorComponents/TabBar";
 import MonacoEditor from "./MonacoEditor";
 import RightPanel from "@/components/Testers/RightPanel";
 import { FilePlus, Upload } from "lucide-react";
+import LogConsole from "@/components/Logs/LogConsole";
 
 export default function EditorLayout() {
   const { files, activeFileId, updateFileContent, createNewFile, uploadFile } = useEditor();
@@ -87,8 +88,8 @@ export default function EditorLayout() {
                     />
                   </div>
                   <div className="mt-5 text-xs text-[#6e6e6e]">
-                    <div>{isMac ? "Command" : "Ctrl"} + Alt + N - New file</div>
-                    <div>{isMac ? "Command" : "Ctrl"} + Alt + O - Open file</div>
+                    <div>{isMac ? "Command + Option" : "Ctrl + Alt"} + N - New file</div>
+                    <div>{isMac ? "Command + Option" : "Ctrl + Alt"} + O - Open file</div>
                   </div>
                 </div>
               </div>
