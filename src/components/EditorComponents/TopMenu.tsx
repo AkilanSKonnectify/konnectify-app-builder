@@ -20,7 +20,7 @@ export default function TopMenu() {
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
   const [deployFields, setDeployFields] = useState({
     appId: "",
-    appVersion: "",
+    appVersion: "1.0.0",
     appName: "",
     hasTriggers: false,
     hasActions: false,
@@ -64,11 +64,15 @@ export default function TopMenu() {
   };
 
   useEffect(() => {
-    let code = activeFile?.content;
-    if (!code) code = "";
+    const code = activeFile?.content;
+    const appId = activeFile?.name?.split(".")?.slice(0, -1)?.join(".");
+    const appVersion = appId?.split("-")?.at(-1);
     setDeployFields((prev) => ({
       ...prev,
-      appCode: String(code),
+      appId: appId || deployFields.appId,
+      appName: appId?.split("-")?.at(0) || deployFields.appName,
+      appVersion: appVersion || deployFields.appVersion,
+      appCode: String(code || ""),
     }));
   }, [activeFile]);
 
@@ -257,7 +261,7 @@ export default function TopMenu() {
           <Button size="sm" variant="outline" onClick={() => setIsDeployModalOpen(false)}>
             Cancel
           </Button>
-          <Button size="sm" onClick={handlePublishApp} disabled={loading || !isCreateFormValid}>
+          <Button size="sm" variant="outline" onClick={handlePublishApp} disabled={loading || !isCreateFormValid}>
             {loading ? (
               <div className="flex items-center gap-2">
                 <Spinner size="sm" />
