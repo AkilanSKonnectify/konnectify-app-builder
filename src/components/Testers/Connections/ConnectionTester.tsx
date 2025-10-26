@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 
 export default function ConnectionTester() {
   useEsbuild();
 
-  const { files, activeFileId } = useEditor();
+  const { files, activeFileId, addConnectionsToFile } = useEditor();
   const activeFile = files.find((f) => f.id === activeFileId);
 
   const runnerRef = useRef<SandboxRunner | null>(null);
@@ -19,13 +20,15 @@ export default function ConnectionTester() {
   const [isLoading, setIsLoading] = useState(false);
   const [authData, setAuthData] = useState("{}");
   const [testResult, setTestResult] = useState<any>(null);
+  const [connectionName, setConnectionName] = useState<string>("");
+  const [isConnectionSaved, setIsConnectionSaved] = useState<boolean>(false);
 
   async function ensureRunner() {
     if (!runnerRef.current) {
       runnerRef.current = new SandboxRunner();
 
       runnerRef.current.onConsole = (level, args) =>
-        append(level === "info" ? "info" : level === "warn" ? "warn" : "error", args);
+        append(level === "info" ? "info" : level === "warn" ? "warn" : level === "debug" ? "debug" : "error", args);
 
       runnerRef.current.onNetworkRequest = (req, respond) => {
         fetch(req.url, req.options)
@@ -90,6 +93,7 @@ export default function ConnectionTester() {
       setTestResult({ success: true, result });
       append("info", ["Connection validation successful:", result]);
     } catch (err: any) {
+      console.log("It raises and error");
       setTestResult({ success: false, error: String(err) });
       append("error", [String(err)]);
       console.error(err);
@@ -97,6 +101,12 @@ export default function ConnectionTester() {
       setIsLoading(false);
     }
   }
+
+  const saveConnection = () => {
+    const fields = JSON.parse(authData);
+    if (!activeFileId || !fields || !connectionName) return;
+    addConnectionsToFile(activeFileId, { id: "", name: connectionName, fields });
+  };
 
   return (
     <div className="space-y-4 text-gray-300">
@@ -130,6 +140,30 @@ export default function ConnectionTester() {
               <div className="bg-gray-800 p-2 rounded text-xs font-mono max-h-32 overflow-auto">
                 <pre>{JSON.stringify(testResult.result || testResult.error, null, 2)}</pre>
               </div>
+              {testResult.success && (
+                <div className="w-full mt-2 flex flex-col gap-3 p-3">
+                  <Input
+                    type="text"
+                    name="connectionName"
+                    placeholder="Enter connetion name"
+                    value={connectionName}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConnectionName(e?.target?.value)}
+                    maxLength={30}
+                  />
+                  {!isConnectionSaved ? (
+                    <Button
+                      className="border border-slate-700 rounded-lg"
+                      onClick={saveConnection}
+                      disabled={isConnectionSaved}
+                      size="sm"
+                    >
+                      Save connection
+                    </Button>
+                  ) : (
+                    <div className="border border-slate-700 rounded-lg">Connection Saved!</div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </CardContent>

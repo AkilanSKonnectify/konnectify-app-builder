@@ -121,7 +121,6 @@ export default function LogConsole() {
           <button onClick={clear} className="px-2 py-1 bg-gray-900 rounded hover:bg-gray-800">
             Clear
           </button>
-          <div className="text-xs text-gray-400">Console</div>
         </div>
         <div className="text-xs text-gray-500">{new Date().toLocaleTimeString()}</div>
       </div>
@@ -135,7 +134,13 @@ export default function LogConsole() {
               <span className="ml-2 text-gray-500 text-xs">{new Date(l.time).toLocaleTimeString()} </span>
               <span
                 className={
-                  l.level === "error" ? "text-red-400" : l.level === "warn" ? "text-yellow-400" : "text-blue-300"
+                  l.level === "error"
+                    ? "text-red-400"
+                    : l.level === "warn"
+                    ? "text-yellow-400"
+                    : l.level === "debug"
+                    ? "text-green-400"
+                    : "text-blue-300"
                 }
               >
                 [{l.level.toUpperCase()}]

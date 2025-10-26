@@ -86,6 +86,30 @@ export function createWorkerBlobUrl(): string {
         };
         return context;
       }
+
+      function sanitizeForPostMessage(obj, depth = 0) {
+        if (depth > 5) return '[Max depth reached]'; // prevent infinite recursion
+
+        if (obj === null || obj === undefined) return obj;
+
+        if (typeof obj === 'function') {
+          return \`[Function: \${obj.name || 'anonymous'}]\`;
+        }
+
+        if (typeof obj === 'object') {
+          if (Array.isArray(obj)) {
+            return obj.map((item) => sanitizeForPostMessage(item, depth + 1));
+          }
+          const clean = {};
+          for (const [key, value] of Object.entries(obj)) {
+            clean[key] = sanitizeForPostMessage(value, depth + 1);
+          }
+          return clean;
+        }
+
+        // primitives (string, number, boolean)
+        return obj;
+      }
   
       function getByPath(root, path) {
         if (!path) return root;
@@ -93,7 +117,7 @@ export function createWorkerBlobUrl(): string {
       }
 
       // Helper to find connector functions dynamically
-      function findConnectorFunction(methodPath) {
+      function executeMethod(methodPath) {
         const root = globalThis.__connector;
         if (!root) return null;
 
@@ -114,7 +138,7 @@ export function createWorkerBlobUrl(): string {
           if (fn && typeof fn === 'function') return fn;
         }
 
-        return null;
+        return root[methodPath];
       }
   
       self.onmessage = async (e) => {
@@ -157,7 +181,7 @@ export function createWorkerBlobUrl(): string {
               return;
             }
             
-            const fn = findConnectorFunction(methodPath);
+            const fn = executeMethod(methodPath);
             if (!fn) {
               self.postMessage({ 
                 type: 'error', 
@@ -168,8 +192,21 @@ export function createWorkerBlobUrl(): string {
             }
             
             try {
-              const result = await fn(enhancedContext);
-              self.postMessage({ type: 'result', requestId, result });
+              let result;
+
+              if (typeof fn === 'function') {
+                result = await fn(enhancedContext);
+              } else {
+                result = {
+                  value: fn,
+                  type: typeof fn,
+                  note: "Returned directly (not a function)"
+                };
+              }
+
+              const safeResult = sanitizeForPostMessage(result);
+
+              self.postMessage({ type: 'result', requestId, result: safeResult });
             } catch (err) {
               self.postMessage({ 
                 type: 'error', 

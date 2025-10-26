@@ -32,7 +32,7 @@ export default function TriggerTester() {
       runnerRef.current = new SandboxRunner();
 
       runnerRef.current.onConsole = (level, args) =>
-        append(level === "info" ? "info" : level === "warn" ? "warn" : "error", args);
+        append(level === "info" ? "info" : level === "warn" ? "warn" : level === "debug" ? "debug" : "error", args);
 
       runnerRef.current.onNetworkRequest = (req, respond) => {
         fetch(req.url, req.options)
@@ -58,14 +58,16 @@ export default function TriggerTester() {
 
       // Try to get triggers from the connector
       const triggers = await runner.run("triggers", {}, { timeoutMs: 5000 });
-      if (triggers && typeof triggers === "object") {
-        const triggerNames = Object.keys(triggers);
+      const triggerOptions = triggers?.value;
+      if (triggerOptions && typeof triggerOptions === "object") {
+        const triggerNames = Object.keys(triggerOptions);
         setAvailableTriggers(triggerNames);
         if (triggerNames.length > 0 && !selectedTrigger) {
           setSelectedTrigger(triggerNames[0]);
         }
       }
     } catch (err) {
+      console.log(err);
       append("warn", ["Could not load triggers:", String(err)]);
     }
   }
@@ -153,15 +155,19 @@ export default function TriggerTester() {
           <CardDescription className="text-xs">Test trigger polling functionality for your connector</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div>
-            <label className="text-xs text-gray-300 mb-1 block">Select Trigger</label>
+          <div className="text-xs text-gray-300">
+            <label className="mb-1 block">Select Trigger</label>
             <Select value={selectedTrigger} onValueChange={setSelectedTrigger}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a trigger" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-[#252526] border border-slate-700 text-gray-100">
                 {availableTriggers.map((trigger) => (
-                  <SelectItem key={trigger} value={trigger}>
+                  <SelectItem
+                    className="text-xs text-gray-300 bg-grey-500 border border-slate-700 hover:bg-gray-700 hover:text-white cursor-pointer"
+                    key={trigger}
+                    value={trigger}
+                  >
                     {trigger}
                   </SelectItem>
                 ))}

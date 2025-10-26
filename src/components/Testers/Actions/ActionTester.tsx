@@ -30,7 +30,7 @@ export default function ActionTester() {
       runnerRef.current = new SandboxRunner();
 
       runnerRef.current.onConsole = (level, args) =>
-        append(level === "info" ? "info" : level === "warn" ? "warn" : "error", args);
+        append(level === "info" ? "info" : level === "warn" ? "warn" : level === "debug" ? "debug" : "error", args);
 
       runnerRef.current.onNetworkRequest = (req, respond) => {
         fetch(req.url, req.options)

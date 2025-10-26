@@ -2,11 +2,18 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 
+type Connection = {
+  id: string;
+  name: string;
+  fields: { [connectionField: string]: string };
+};
+
 export interface FileData {
   id: string;
   name: string;
   content: string;
   language: string;
+  connections: Array<Connection>;
 }
 
 interface EditorState {
@@ -28,6 +35,8 @@ interface EditorContextType {
   setActiveFile: (id: string) => void;
   createNewFile: () => void;
   uploadFile: (file: File) => Promise<void>;
+  addConnectionsToFile: (id: string, connection: Connection) => void;
+  removeConnectionsToFile: (id: string, connectionId: string) => void;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -127,6 +136,31 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
     );
   }, []);
 
+  const addConnectionsToFile = useCallback((id: string, connection: Connection) => {
+    setFiles((prev) =>
+      prev.map((f) => {
+        if (f.id === id) {
+          connection.id = `connection-${Date.now()}-${Math.random()}`;
+          const connections = [...f.connections, connection];
+          return { ...f, connections: connections };
+        }
+        return f;
+      })
+    );
+  }, []);
+
+  const removeConnectionsToFile = useCallback((id: string, connectionId: string) => {
+    setFiles((prev) =>
+      prev.map((f) => {
+        if (f.id === id) {
+          const connections = f.connections.filter((connection) => connection.id !== connectionId);
+          return { ...f, connections: connections };
+        }
+        return f;
+      })
+    );
+  }, []);
+
   const openFile = useCallback((id: string) => {
     setOpenTabs((prev) => {
       if (prev.includes(id)) {
@@ -166,6 +200,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
       name: newFileName,
       content: "",
       language: "typescript",
+      connections: [],
     };
 
     addFile(newFile);
@@ -182,6 +217,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
           name: file.name,
           content,
           language,
+          connections: [],
         };
 
         addFile(newFile);
@@ -239,6 +275,8 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         setActiveFile: setActiveFileHandler,
         createNewFile,
         uploadFile,
+        addConnectionsToFile,
+        removeConnectionsToFile,
       }}
     >
       {children}
