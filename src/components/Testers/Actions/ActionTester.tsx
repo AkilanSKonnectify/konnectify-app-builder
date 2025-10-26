@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 export default function ActionTester() {
   useEsbuild();
@@ -18,6 +19,7 @@ export default function ActionTester() {
   const runnerRef = useRef<SandboxRunner | null>(null);
   const { append } = useLogs();
   const [isLoading, setIsLoading] = useState(false);
+  const [timeout, setTimeout] = useState<number>(30);
   const [authData, setAuthData] = useState("{}");
   const [actionData, setActionData] = useState("{}");
   const [configData, setConfigData] = useState("{}");
@@ -56,8 +58,9 @@ export default function ActionTester() {
 
       // Try to get actions from the connector
       const actions = await runner.run("actions", {}, { timeoutMs: 5000 });
-      if (actions && typeof actions === "object") {
-        const actionNames = Object.keys(actions);
+      const actionOptions = actions?.value;
+      if (actionOptions && typeof actionOptions === "object") {
+        const actionNames = Object.keys(actionOptions);
         setAvailableActions(actionNames);
         if (actionNames.length > 0 && !selectedAction) {
           setSelectedAction(actionNames[0]);
@@ -108,18 +111,12 @@ export default function ActionTester() {
           data: parsedActionData,
           config_fields: parsedConfig,
         },
-        logger: {
-          info: (...args: any[]) => append("info", args),
-          error: (...args: any[]) => append("error", args),
-          debug: (...args: any[]) => append("debug", args),
-          warn: (...args: any[]) => append("warn", args),
-        },
       };
 
       // Run action execute function
       const result = await runner.run(`actions.${selectedAction}.execute`, context, {
         proxyFetch: true,
-        timeoutMs: 30000,
+        timeoutMs: timeout * 1000,
         operationData: {
           appId: activeFile.name,
           operationKey: selectedAction,
@@ -144,22 +141,37 @@ export default function ActionTester() {
   }, [activeFile]);
 
   return (
-    <div className="space-y-4 text-gray-300">
-      <Card>
-        <CardHeader>
+    <div className="h-full flex flex-col text-gray-300 p-3">
+      <Card className="flex flex-col h-full">
+        <CardHeader className="flex-shrink-0">
           <CardTitle className="text-sm">Action Test</CardTitle>
           <CardDescription className="text-xs">Test action execution functionality for your connector</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
+        <CardContent className="flex flex-col flex-1 overflow-hidden space-y-3">
+          <div className="text-xs flex justify-start gap-3 flex-shrink-0">
+            <span>Set timeout(in sec): </span>
+            <Input
+              className="h-4 w-20"
+              type="number"
+              name="timeout"
+              placeholder="in seconds"
+              value={timeout}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTimeout(parseInt(e?.target?.value))}
+            />
+          </div>
+          <div className="flex-shrink-0">
             <label className="text-xs text-gray-300 mb-1 block">Select Action</label>
             <Select value={selectedAction} onValueChange={setSelectedAction}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select an action" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-[#252526] border border-slate-700 text-gray-100">
                 {availableActions.map((action) => (
-                  <SelectItem key={action} value={action}>
+                  <SelectItem
+                    className="text-xs text-gray-300 bg-grey-500 border border-slate-700 hover:bg-gray-700 hover:text-white cursor-pointer"
+                    key={action}
+                    value={action}
+                  >
                     {action}
                   </SelectItem>
                 ))}
@@ -167,7 +179,7 @@ export default function ActionTester() {
             </Select>
           </div>
 
-          <div>
+          <div className="flex-shrink-0">
             <label className="text-xs text-gray-300 mb-1 block">Auth Data (JSON)</label>
             <Textarea
               value={authData}
@@ -177,8 +189,8 @@ export default function ActionTester() {
             />
           </div>
 
-          <div>
-            <label className="text-xs text-gray-300 mb-1 block">Action Data (JSON)</label>
+          <div className="flex-shrink-0">
+            <label className="text-xs text-gray-300 mb-1 block">Input Fields (JSON)</label>
             <Textarea
               value={actionData}
               onChange={(e) => setActionData(e.target.value)}
@@ -187,7 +199,7 @@ export default function ActionTester() {
             />
           </div>
 
-          <div>
+          <div className="flex-shrink-0">
             <label className="text-xs text-gray-300 mb-1 block">Config Fields (JSON)</label>
             <Textarea
               value={configData}
@@ -200,21 +212,21 @@ export default function ActionTester() {
           <Button
             onClick={handleTestAction}
             disabled={isLoading || !activeFile || !selectedAction}
-            className="w-full"
+            className="w-full flex-shrink-0"
             size="sm"
           >
             {isLoading ? "Testing..." : "Test Action"}
           </Button>
 
           {testResult && (
-            <div className="mt-3">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex items-center gap-2 mb-2 flex-shrink-0">
                 <Badge variant={testResult.success ? "default" : "destructive"}>
                   {testResult.success ? "Success" : "Failed"}
                 </Badge>
               </div>
-              <div className="bg-gray-800 p-2 rounded text-xs font-mono max-h-32 overflow-auto">
-                <pre>{JSON.stringify(testResult.result || testResult.error, null, 2)}</pre>
+              <div className="bg-gray-800 p-2 rounded text-xs font-mono flex-1 overflow-auto">
+                <pre className="whitespace-pre-wrap">{JSON.stringify(testResult.result || testResult.error, null, 2)}</pre>
               </div>
             </div>
           )}

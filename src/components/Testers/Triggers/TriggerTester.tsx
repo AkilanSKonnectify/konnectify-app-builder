@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 export default function TriggerTester() {
   useEsbuild();
@@ -18,6 +19,7 @@ export default function TriggerTester() {
   const runnerRef = useRef<SandboxRunner | null>(null);
   const { append } = useLogs();
   const [isLoading, setIsLoading] = useState(false);
+  const [timeout, setTimeout] = useState<number>(30);
   const [authData, setAuthData] = useState("{}");
   const [triggerData, setTriggerData] = useState(
     '{"since": "2024-01-01T00:00:00Z", "till": "2024-12-31T23:59:59Z", "cursor": null}'
@@ -112,18 +114,12 @@ export default function TriggerTester() {
           data: parsedTriggerData,
           config_fields: parsedConfig,
         },
-        logger: {
-          info: (...args: any[]) => append("info", args),
-          error: (...args: any[]) => append("error", args),
-          debug: (...args: any[]) => append("debug", args),
-          warn: (...args: any[]) => append("warn", args),
-        },
       };
 
       // Run trigger poll function
       const result = await runner.run(`triggers.${selectedTrigger}.poll`, context, {
         proxyFetch: true,
-        timeoutMs: 30000,
+        timeoutMs: timeout * 1000,
         operationData: {
           appId: activeFile.name,
           triggerKey: selectedTrigger,
@@ -148,14 +144,25 @@ export default function TriggerTester() {
   }, [activeFile]);
 
   return (
-    <div className="space-y-4 text-gray-300">
-      <Card>
-        <CardHeader>
+    <div className="h-full flex flex-col text-gray-300 p-3">
+      <Card className="flex flex-col h-full">
+        <CardHeader className="flex-shrink-0">
           <CardTitle className="text-sm">Trigger Test</CardTitle>
           <CardDescription className="text-xs">Test trigger polling functionality for your connector</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="text-xs text-gray-300">
+        <CardContent className="flex flex-col flex-1 overflow-hidden space-y-3">
+          <div className="text-xs flex justify-start gap-3 flex-shrink-0">
+            <span>Set timeout(in sec): </span>
+            <Input
+              className="h-4 w-20"
+              type="number"
+              name="timeout"
+              placeholder="in seconds"
+              value={timeout}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTimeout(parseInt(e?.target?.value))}
+            />
+          </div>
+          <div className="text-xs text-gray-300 flex-shrink-0">
             <label className="mb-1 block">Select Trigger</label>
             <Select value={selectedTrigger} onValueChange={setSelectedTrigger}>
               <SelectTrigger className="w-full">
@@ -175,7 +182,7 @@ export default function TriggerTester() {
             </Select>
           </div>
 
-          <div>
+          <div className="flex-shrink-0">
             <label className="text-xs text-gray-300 mb-1 block">Auth Data (JSON)</label>
             <Textarea
               value={authData}
@@ -185,7 +192,7 @@ export default function TriggerTester() {
             />
           </div>
 
-          <div>
+          <div className="flex-shrink-0">
             <label className="text-xs text-gray-300 mb-1 block">Trigger Data (JSON)</label>
             <Textarea
               value={triggerData}
@@ -195,7 +202,7 @@ export default function TriggerTester() {
             />
           </div>
 
-          <div>
+          <div className="flex-shrink-0">
             <label className="text-xs text-gray-300 mb-1 block">Config Fields (JSON)</label>
             <Textarea
               value={configData}
@@ -208,21 +215,21 @@ export default function TriggerTester() {
           <Button
             onClick={handleTestTrigger}
             disabled={isLoading || !activeFile || !selectedTrigger}
-            className="w-full"
+            className="w-full flex-shrink-0"
             size="sm"
           >
             {isLoading ? "Testing..." : "Test Trigger"}
           </Button>
 
           {testResult && (
-            <div className="mt-3">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex items-center gap-2 mb-2 flex-shrink-0">
                 <Badge variant={testResult.success ? "default" : "destructive"}>
                   {testResult.success ? "Success" : "Failed"}
                 </Badge>
               </div>
-              <div className="bg-gray-800 p-2 rounded text-xs font-mono max-h-32 overflow-auto">
-                <pre>{JSON.stringify(testResult.result || testResult.error, null, 2)}</pre>
+              <div className="bg-gray-800 p-2 rounded text-xs font-mono flex-1 overflow-auto">
+                <pre className="whitespace-pre-wrap">{JSON.stringify(testResult.result || testResult.error, null, 2)}</pre>
               </div>
             </div>
           )}
