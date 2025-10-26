@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import ConnectionTester from "./Connections/ConnectionTester";
+import TriggerTester from "./Triggers/TriggerTester";
+import ActionTester from "./Actions/ActionTester";
 
 type TabType = "connection" | "trigger" | "actions";
 
@@ -17,27 +19,11 @@ export default function RightPanelTabs() {
   const renderContent = () => {
     switch (activeTab) {
       case "connection":
-        return (
-          <div className="p-4 text-[#cccccc]">
-            <h3 className="text-sm mb-3 text-white">Connection Settings</h3>
-            <p className="text-xs">Configure your connection and test it here.</p>
-            <ConnectionTester />
-          </div>
-        );
+        return <ConnectionTester />;
       case "trigger":
-        return (
-          <div className="p-4 text-[#cccccc]">
-            <h3 className="text-sm mb-3 text-white">Trigger Configuration</h3>
-            <p className="text-xs">Set up triggers for your workflow.</p>
-          </div>
-        );
+        return <TriggerTester />;
       case "actions":
-        return (
-          <div className="p-4 text-[#cccccc]">
-            <h3 className="text-sm mb-3 text-white">Actions</h3>
-            <p className="text-xs">Define actions to be executed.</p>
-          </div>
-        );
+        return <ActionTester />;
       default:
         return null;
     }

@@ -115,7 +115,15 @@ export class SandboxRunner {
     });
   }
 
-  run(methodPath: string, context: any, options?: { proxyFetch?: boolean; timeoutMs?: number }) {
+  run(
+    methodPath: string,
+    context: any,
+    options?: {
+      proxyFetch?: boolean;
+      timeoutMs?: number;
+      operationData?: any;
+    }
+  ) {
     if (!this.worker) throw new Error("Worker not ready");
     const requestId = Math.random().toString(36).slice(2);
 
@@ -125,7 +133,7 @@ export class SandboxRunner {
     const p = new Promise<any>((resolve, reject) => {
       const resolver = (msg: any) => {
         if (msg.type === "result") resolve(msg.result);
-        else reject(msg.error || "unknown worker error");
+        else reject(new Error(msg.error || "unknown worker error"));
       };
       this.pending.set(requestId, resolver);
 
@@ -148,6 +156,7 @@ export class SandboxRunner {
       context: serializableContext,
       requestId,
       proxyFetch: !!options?.proxyFetch,
+      operationData: options?.operationData || {},
     });
 
     return p;
