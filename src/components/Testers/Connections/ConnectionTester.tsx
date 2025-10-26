@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { SandboxRunner } from "@/lib/sandboxRunner";
 import { useLogs } from "@/context/LogContext";
 import { ensureEsbuildInitialized, useEsbuild } from "@/hooks/useEsbuild";
@@ -106,7 +106,12 @@ export default function ConnectionTester() {
     const fields = JSON.parse(authData);
     if (!activeFileId || !fields || !connectionName) return;
     addConnectionsToFile(activeFileId, { id: "", name: connectionName, fields });
+    setIsConnectionSaved(true);
   };
+
+  useEffect(() => {
+    setIsConnectionSaved(false);
+  }, [testResult]);
 
   return (
     <div className="space-y-4 text-gray-300">
@@ -160,7 +165,7 @@ export default function ConnectionTester() {
                       Save connection
                     </Button>
                   ) : (
-                    <div className="border border-slate-700 rounded-lg">Connection Saved!</div>
+                    <>Connection Saved!</>
                   )}
                 </div>
               )}
