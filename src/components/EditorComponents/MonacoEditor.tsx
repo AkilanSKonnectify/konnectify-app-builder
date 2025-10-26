@@ -85,7 +85,7 @@ export default function MonacoEditor({ fileId, code, onChange, filename, languag
           fontSize: 14,
           lineNumbers: "on",
           automaticLayout: true,
-          scrollBeyondLastLine: false,
+          scrollBeyondLastLine: true,
           wordWrap: "on",
         }}
       />

@@ -157,6 +157,7 @@ export class SandboxRunner {
       requestId,
       proxyFetch: !!options?.proxyFetch,
       operationData: options?.operationData || {},
+      enableLogger: true,
     });
 
     return p;
