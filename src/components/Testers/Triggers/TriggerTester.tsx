@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { SandboxRunner } from "@/lib/sandboxRunner";
 import { useLogs } from "@/context/LogContext";
 import { ensureEsbuildInitialized, useEsbuild } from "@/hooks/useEsbuild";
@@ -9,24 +9,35 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Field, PollTrigger, StaticWebhookTrigger, Triggers, WebhookTrigger } from "@/types/konnectify-dsl";
+import { loadConfigFields } from "../loadRequiredFields";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function TriggerTester() {
   useEsbuild();
 
   const { files, activeFileId } = useEditor();
   const activeFile = files.find((f) => f.id === activeFileId);
+  const connections = activeFile?.connections;
 
   const runnerRef = useRef<SandboxRunner | null>(null);
   const { append } = useLogs();
   const [isLoading, setIsLoading] = useState(false);
   const [timeout, setTimeout] = useState<number>(30);
   const [authData, setAuthData] = useState("{}");
-  const [triggerData, setTriggerData] = useState(
+  const [isAuthDataManual, setIsAuthDataManual] = useState(connections?.length === 0);
+  const [selectedConnection, setSelectedConnection] = useState(connections?.length ? connections?.[0] : null);
+  const [triggerData, setTriggerData] = useState("{}");
+  const [isTriggerDataManual, setIsTriggerDataManual] = useState(true);
+  const [additionalTriggerData, setAdditionalTriggerData] = useState(
     '{"since": "2024-01-01T00:00:00Z", "till": "2024-12-31T23:59:59Z", "cursor": null}'
   );
   const [configData, setConfigData] = useState("{}");
-  const [selectedTrigger, setSelectedTrigger] = useState("");
-  const [availableTriggers, setAvailableTriggers] = useState<string[]>([]);
+  const [selectedTrigger, setSelectedTrigger] = useState<StaticWebhookTrigger | WebhookTrigger | PollTrigger>();
+  const [availableTriggers, setAvailableTriggers] = useState<Triggers>();
+  const [isConfigFieldsLoading, setIsConfigFieldsLoading] = useState(false);
+  const [configFields, setConfigFields] = useState<Field[]>();
+  console.log("ssssssssss", configFields);
   const [testResult, setTestResult] = useState<any>(null);
 
   async function ensureRunner() {
@@ -62,15 +73,30 @@ export default function TriggerTester() {
       const triggers = await runner.run("triggers", {}, { timeoutMs: 5000 });
       const triggerOptions = triggers?.value;
       if (triggerOptions && typeof triggerOptions === "object") {
-        const triggerNames = Object.keys(triggerOptions);
-        setAvailableTriggers(triggerNames);
-        if (triggerNames.length > 0 && !selectedTrigger) {
-          setSelectedTrigger(triggerNames[0]);
+        setAvailableTriggers(triggerOptions);
+        if (Object.keys(triggerOptions || {}).length > 0 && !selectedTrigger) {
+          setSelectedTrigger(triggerOptions[0]);
         }
       }
     } catch (err) {
       console.log(err);
       append("warn", ["Could not load triggers:", String(err)]);
+    }
+  }
+
+  async function loadConfigAndInputFields() {
+    try {
+      if (selectedTrigger?.has_config_fields) {
+        append("info", ["Config Loading Config Fields...."]);
+        setIsConfigFieldsLoading(true);
+        const result = await loadConfigFields(selectedTrigger, activeFile, ensureRunner, append, timeout, authData);
+        setConfigFields(result);
+        append("info", ["Config fields loaded"]);
+      }
+    } catch (err) {
+      append("error", [String(err)]);
+    } finally {
+      setIsConfigFieldsLoading(false);
     }
   }
 
@@ -101,7 +127,7 @@ export default function TriggerTester() {
 
       try {
         parsedAuth = JSON.parse(authData);
-        parsedTriggerData = JSON.parse(triggerData);
+        parsedTriggerData = { ...JSON.parse(triggerData), ...JSON.parse(additionalTriggerData) };
         parsedConfig = JSON.parse(configData);
       } catch (e) {
         append("warn", ["Invalid JSON in input data, using empty objects"]);
@@ -137,11 +163,32 @@ export default function TriggerTester() {
     }
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (activeFile) {
       loadAvailableTriggers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFile]);
+
+  useEffect(() => {
+    if (selectedConnection) {
+      setAuthData(JSON.stringify(selectedConnection?.fields));
+    }
+  }, [selectedConnection]);
+
+  useEffect(() => {
+    if (!isTriggerDataManual && selectedTrigger && !configFields) {
+      loadConfigAndInputFields();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTriggerDataManual]);
+
+  useEffect(() => {
+    if (selectedTrigger) {
+      loadConfigAndInputFields();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTrigger]);
 
   return (
     <div className="h-full flex flex-col text-gray-300 p-3">
@@ -164,18 +211,21 @@ export default function TriggerTester() {
           </div>
           <div className="text-xs text-gray-300 flex-shrink-0">
             <label className="mb-1 block">Select Trigger</label>
-            <Select value={selectedTrigger} onValueChange={setSelectedTrigger}>
+            <Select
+              value={selectedTrigger?.id}
+              onValueChange={(triggerId) => setSelectedTrigger(availableTriggers?.[triggerId])}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a trigger" />
               </SelectTrigger>
               <SelectContent className="bg-[#252526] border border-slate-700 text-gray-100">
-                {availableTriggers.map((trigger) => (
+                {Object.values(availableTriggers || {}).map((trigger) => (
                   <SelectItem
                     className="text-xs text-gray-300 bg-grey-500 border border-slate-700 hover:bg-gray-700 hover:text-white cursor-pointer"
-                    key={trigger}
-                    value={trigger}
+                    key={trigger.id}
+                    value={trigger.id}
                   >
-                    {trigger}
+                    {trigger.title || trigger.id}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -183,20 +233,116 @@ export default function TriggerTester() {
           </div>
 
           <div className="flex-shrink-0">
-            <label className="text-xs text-gray-300 mb-1 block">Auth Data (JSON)</label>
-            <Textarea
-              value={authData}
-              onChange={(e) => setAuthData(e.target.value)}
-              placeholder='{"access_token": "your_token"}'
-              className="min-h-[60px] text-xs font-mono"
-            />
+            <div className="flex justify-between items-center">
+              <label className="text-xs text-gray-300 mb-1 block">Auth Data (JSON)</label>
+              <div className="flex border border-gray-600 rounded overflow-hidden text-gray-300">
+                <Button
+                  onClick={() => setIsAuthDataManual(true)}
+                  size="sm"
+                  className="rounded-none border-r border-gray-600 text-gray-300"
+                >
+                  {"{}"}
+                </Button>
+                <Button
+                  onClick={() => setIsAuthDataManual(false)}
+                  disabled={!connections}
+                  size="sm"
+                  className="rounded-none text-gray-300"
+                >
+                  Load
+                </Button>
+              </div>
+            </div>
+            {isAuthDataManual ? (
+              <Textarea
+                value={authData}
+                onChange={(e) => setAuthData(e.target.value)}
+                placeholder='{"access_token": "your_token"}'
+                className="min-h-[60px] text-xs font-mono"
+              />
+            ) : (
+              <Select
+                value={selectedConnection?.id}
+                onValueChange={(e) =>
+                  setSelectedConnection(connections?.find((connection) => connection.id === e) || null)
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a connection" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#252526] border border-slate-700 text-gray-100">
+                  {connections?.map((connection) => (
+                    <SelectItem
+                      className="text-xs text-gray-300 bg-grey-500 border border-slate-700 hover:bg-gray-700 hover:text-white cursor-pointer"
+                      key={connection.id}
+                      value={connection.id}
+                    >
+                      {connection.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="flex-shrink-0">
-            <label className="text-xs text-gray-300 mb-1 block">Trigger Data (JSON)</label>
+            <div className="flex justify-between items-center">
+              <label className="text-xs text-gray-300 mb-1 block">Input Fields</label>
+              <div className="flex border border-gray-600 rounded overflow-hidden text-gray-300">
+                <Button
+                  onClick={() => setIsTriggerDataManual(true)}
+                  size="sm"
+                  className="rounded-none border-r border-gray-600 text-gray-300"
+                >
+                  {"{}"}
+                </Button>
+                <Button
+                  onClick={() => setIsTriggerDataManual(false)}
+                  disabled={!selectedTrigger}
+                  size="sm"
+                  className="rounded-none text-gray-300"
+                >
+                  Load
+                </Button>
+              </div>
+            </div>
+            {isTriggerDataManual ? (
+              <Textarea
+                value={triggerData}
+                onChange={(e) => setTriggerData(e.target.value)}
+                placeholder="{}"
+                className="min-h-[60px] text-xs font-mono"
+              />
+            ) : isConfigFieldsLoading ? (
+              <Spinner text="Loading config fields" size="sm" />
+            ) : !configFields ? (
+              <p className="text-red-400 text-sm m-3"> Error loading config fields</p>
+            ) : (
+              configFields?.map((field) => (
+                <div key={field.name} className="mb-5">
+                  <label key={field.name} className="text-xs text-gray-300 mb-1 block">
+                    {field?.label || field.name}
+                  </label>
+                  <Input
+                    className="text-xs font-mono"
+                    type={field.type}
+                    name={field.name}
+                    placeholder={`Enter ${field.name}`}
+                    value={JSON.parse(triggerData)?.[field.name]}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setAuthData((prev: any) => ({ ...prev, [field.name]: e.target.value }))
+                    }
+                  />
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="flex-shrink-0">
+            <label className="text-xs text-gray-300 mb-1 block">Additional data (JSON)</label>
             <Textarea
-              value={triggerData}
-              onChange={(e) => setTriggerData(e.target.value)}
+              value={additionalTriggerData}
+              onChange={(e) => setAdditionalTriggerData(e.target.value)}
               placeholder='{"since": "2024-01-01T00:00:00Z", "till": "2024-12-31T23:59:59Z", "cursor": null}'
               className="min-h-[60px] text-xs font-mono"
             />
@@ -229,7 +375,9 @@ export default function TriggerTester() {
                 </Badge>
               </div>
               <div className="bg-gray-800 p-2 rounded text-xs font-mono flex-1 overflow-auto">
-                <pre className="whitespace-pre-wrap">{JSON.stringify(testResult.result || testResult.error, null, 2)}</pre>
+                <pre className="whitespace-pre-wrap">
+                  {JSON.stringify(testResult.result || testResult.error, null, 2)}
+                </pre>
               </div>
             </div>
           )}

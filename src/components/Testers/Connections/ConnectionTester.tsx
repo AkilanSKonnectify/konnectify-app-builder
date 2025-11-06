@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { ConnectionField } from "@/types/konnectify-dsl";
 
 export default function ConnectionTester() {
   useEsbuild();
@@ -18,10 +19,12 @@ export default function ConnectionTester() {
   const runnerRef = useRef<SandboxRunner | null>(null);
   const { append } = useLogs();
   const [isLoading, setIsLoading] = useState(false);
-  const [authData, setAuthData] = useState("{}");
+  const [authData, setAuthData] = useState<any>({});
   const [testResult, setTestResult] = useState<any>(null);
   const [connectionName, setConnectionName] = useState<string>("");
   const [isConnectionSaved, setIsConnectionSaved] = useState<boolean>(false);
+  const [authType, setAuthType] = useState<"credentials" | "oauth2">("credentials");
+  const [authFields, setAuthFields] = useState<ConnectionField[]>();
 
   async function ensureRunner() {
     if (!runnerRef.current) {
@@ -44,6 +47,29 @@ export default function ConnectionTester() {
     return runnerRef.current!;
   }
 
+  async function loadAuthDetails() {
+    if (!activeFile?.content) return;
+
+    try {
+      await ensureEsbuildInitialized();
+      const runner = await ensureRunner();
+      await runner.loadConnector(activeFile.content);
+
+      // Try to get authType from the connector
+      const connection = await runner.run("connection", {}, { timeoutMs: 5000 });
+      const typeOfAuth = connection?.value?.["auth"]?.["type"];
+      const FieldsInAuth = connection?.value?.["fields"];
+      if (typeOfAuth) setAuthType(typeOfAuth);
+      if (FieldsInAuth) {
+        setAuthFields(FieldsInAuth);
+        if (typeOfAuth === "credentials" && FieldsInAuth?.length === 0)
+          append("warn", ["Auth type is set to credentials but there are no fields available!"]);
+      }
+    } catch (err) {
+      append("warn", ["Could not load authType:", String(err)]);
+    }
+  }
+
   async function handleTestConnection() {
     const ts = activeFile?.content;
     if (!ts) {
@@ -63,17 +89,9 @@ export default function ConnectionTester() {
       await runner.loadConnector(ts);
       append("info", ["Connector loaded in worker"]);
 
-      // Parse auth data
-      let parsedAuth = {};
-      try {
-        parsedAuth = JSON.parse(authData);
-      } catch (e) {
-        append("warn", ["Invalid JSON in auth data, using empty object"]);
-      }
-
       // Build context
       const context = {
-        auth: parsedAuth,
+        auth: authData,
         logger: {
           info: (...args: any[]) => append("info", args),
           error: (...args: any[]) => append("error", args),
@@ -103,15 +121,20 @@ export default function ConnectionTester() {
   }
 
   const saveConnection = () => {
-    const fields = JSON.parse(authData);
-    if (!activeFileId || !fields || !connectionName) return;
-    addConnectionsToFile(activeFileId, { id: "", name: connectionName, fields });
+    if (!activeFileId || !authData || !connectionName) return;
+    addConnectionsToFile(activeFileId, { id: "", name: connectionName, fields: authData });
     setIsConnectionSaved(true);
   };
 
   useEffect(() => {
     setIsConnectionSaved(false);
   }, [testResult]);
+
+  useEffect(() => {
+    if (activeFile) {
+      loadAuthDetails();
+    }
+  }, [activeFile, loadAuthDetails]);
 
   return (
     <div className="h-full flex flex-col text-gray-300 p-3">
@@ -122,19 +145,30 @@ export default function ConnectionTester() {
         </CardHeader>
         <CardContent className="flex flex-col flex-1 overflow-hidden space-y-3">
           <div className="flex-shrink-0">
-            <label className="text-xs text-gray-300 mb-1 block">Auth Data (JSON)</label>
-            <Textarea
-              value={authData}
-              onChange={(e) => setAuthData(e.target.value)}
-              placeholder='{"access_token": "your_token", "client_id": "your_id"}'
-              className="min-h-[80px] text-xs font-mono"
-            />
+            {authType === "credentials" &&
+              authFields?.map((field) => (
+                <div key={field.name} className="mb-5">
+                  <label key={field.name} className="text-xs text-gray-300 mb-1 block">
+                    {field?.label || field.name}
+                  </label>
+                  <Input
+                    className="text-xs font-mono"
+                    type={field.type}
+                    name={field.name}
+                    placeholder={field?.placeholder || `Enter ${field.name}`}
+                    value={authData?.[field.name]}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setAuthData((prev: any) => ({ ...prev, [field.name]: e.target.value }))
+                    }
+                  />
+                </div>
+              ))}
           </div>
 
           <Button
             onClick={handleTestConnection}
             disabled={isLoading || !activeFile}
-            className="w-full flex-shrink-0"
+            className="w-full flex-shrink-0 border rounded-sm"
             size="sm"
           >
             {isLoading ? "Testing..." : "Test Connection"}
@@ -147,12 +181,12 @@ export default function ConnectionTester() {
                   {testResult.success ? "Success" : "Failed"}
                 </Badge>
               </div>
-              <div className="bg-gray-800 p-2 rounded text-xs font-mono flex-1 overflow-auto">
+              <div className="bg-gray-800 p-2 rounded text-xs font-mono max-h-32 overflow-auto">
                 <pre className="whitespace-pre-wrap">
                   {JSON.stringify(testResult.result || testResult.error, null, 2)}
                 </pre>
               </div>
-              {testResult.success && (
+              {testResult?.success && testResult?.result?.["validated"] && (
                 <div className="w-full mt-2 flex flex-col gap-3 p-3 flex-shrink-0">
                   <Input
                     type="text"
