@@ -3,7 +3,7 @@
 import React, { useRef, useEffect } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
-import { useSetupKonnectifyDSL } from "@/hooks/useSetupKonnectifyDSL";
+// import { useSetupKonnectifyDSL } from "@/hooks/useSetupKonnectifyDSL";
 
 interface MonacoEditorProps {
   fileId: string;
@@ -26,9 +26,21 @@ export default function MonacoEditor({ fileId, code, onChange, filename, languag
 
     let model = editorModels.get(fileId);
 
+    if (model && (model.isDisposed() ?? false)) {
+      // remove disposed model from map
+      editorModels.delete(fileId);
+      model = undefined;
+    }
+
     if (!model) {
       const uri = monaco.Uri.parse(`file:///${fileId}`);
       model = monaco.editor.getModel(uri) || monaco.editor.createModel(code, language, uri);
+      editorModels.set(fileId, model);
+    }
+
+    if (model.isDisposed()) {
+      const uri = monaco.Uri.parse(`file:///${fileId}`);
+      model = monaco.editor.createModel(code, language, uri); // recreate
       editorModels.set(fileId, model);
     }
 
