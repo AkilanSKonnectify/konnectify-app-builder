@@ -134,7 +134,8 @@ export default function ConnectionTester() {
     if (activeFile) {
       loadAuthDetails();
     }
-  }, [activeFile, loadAuthDetails]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFile]);
 
   return (
     <div className="h-full flex flex-col text-gray-300 p-3">
