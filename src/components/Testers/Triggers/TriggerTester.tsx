@@ -9,9 +9,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Field, PollTrigger, StaticWebhookTrigger, Triggers, WebhookTrigger } from "@/types/konnectify-dsl";
+import { Field, Triggers } from "@/types/konnectify-dsl";
 import { loadConfigFields } from "../loadRequiredFields";
 import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/utils/utils";
+import PollTrigger from "./PollTrigger";
 
 export default function TriggerTester() {
   useEsbuild();
@@ -193,13 +195,13 @@ export default function TriggerTester() {
   }, [selectedTrigger, authData]);
 
   return (
-    <div className="h-full flex flex-col text-gray-300 p-3">
-      <Card className="flex flex-col h-full">
+    <div className="h-full min-h-0 flex flex-col text-gray-300 p-3 overflow-hidden">
+      <Card className="flex flex-col flex-1 min-h-0">
         <CardHeader className="flex-shrink-0">
           <CardTitle className="text-sm">Trigger Test</CardTitle>
           <CardDescription className="text-xs">Test trigger polling functionality for your connector</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col flex-1 overflow-hidden space-y-3">
+        <CardContent className="flex flex-col flex-1 min-h-0 overflow-auto scrollbar-hide space-y-3 pr-1 mb-5">
           <div className="text-xs flex justify-start gap-3 flex-shrink-0">
             <span>Set timeout(in sec): </span>
             <Input
@@ -236,12 +238,15 @@ export default function TriggerTester() {
 
           <div className="flex-shrink-0">
             <div className="flex justify-between items-center">
-              <label className="text-xs text-gray-300 mb-1 block">Auth Data (JSON)</label>
-              <div className="flex border border-gray-600 rounded overflow-hidden text-gray-300">
+              <label className="text-xs text-gray-300 mb-1 block">Auth Data {isAuthDataManual && "(JSON)"}</label>
+              <div className="flex border-b border-[#1e1e1e] bg-[#2d2d30] rounded overflow-hidden text-gray-300">
                 <Button
                   onClick={() => setIsAuthDataManual(true)}
                   size="sm"
-                  className="rounded-none border-r border-gray-600 text-gray-300"
+                  className={cn(
+                    "rounded-none border-r border-gray-600 text-gray-300",
+                    isAuthDataManual ? "bg-[#1e1e1e] text-white" : "bg-[#2d2d30] text-[#969696]"
+                  )}
                 >
                   {"{}"}
                 </Button>
@@ -249,7 +254,10 @@ export default function TriggerTester() {
                   onClick={() => setIsAuthDataManual(false)}
                   disabled={!connections}
                   size="sm"
-                  className="rounded-none text-gray-300"
+                  className={cn(
+                    "rounded-none border-r border-gray-600 text-gray-300",
+                    !isAuthDataManual ? "bg-[#1e1e1e] text-white" : "bg-[#2d2d30] text-[#969696]"
+                  )}
                 >
                   Load
                 </Button>
@@ -287,18 +295,28 @@ export default function TriggerTester() {
             )}
           </div>
 
-          <div className="flex-shrink-0">
+          {/* <div className="flex-shrink-0">
             <div className="flex justify-between items-center">
               <label className="text-xs text-gray-300 mb-1 block">Input: </label>
-              <div className="flex border border-gray-600 rounded overflow-hidden text-gray-300">
+              <div className="flex border-b border-[#1e1e1e] bg-[#2d2d30] rounded overflow-hidden text-gray-300">
                 <Button
                   onClick={() => setIsConfigDataManual(true)}
                   size="sm"
-                  className="rounded-none border-r border-gray-600 text-gray-300"
+                  className={cn(
+                    "rounded-none border-r border-gray-600 text-gray-300",
+                    isConfigDataManual ? "bg-[#1e1e1e] text-white" : "bg-[#2d2d30] text-[#969696]"
+                  )}
                 >
                   {"{}"}
                 </Button>
-                <Button onClick={() => setIsConfigDataManual(false)} size="sm" className="rounded-none text-gray-300">
+                <Button
+                  onClick={() => setIsConfigDataManual(false)}
+                  size="sm"
+                  className={cn(
+                    "rounded-none border-r border-gray-600 text-gray-300",
+                    !isConfigDataManual ? "bg-[#1e1e1e] text-white" : "bg-[#2d2d30] text-[#969696]"
+                  )}
+                >
                   Load
                 </Button>
               </div>
@@ -362,19 +380,34 @@ export default function TriggerTester() {
           </Button>
 
           {testResult && (
-            <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 flex flex-col min-h-32">
               <div className="flex items-center gap-2 mb-2 flex-shrink-0">
                 <Badge variant={testResult.success ? "default" : "destructive"}>
                   {testResult.success ? "Success" : "Failed"}
                 </Badge>
               </div>
-              <div className="bg-gray-800 p-2 rounded text-xs font-mono flex-1 overflow-auto">
+              <div className="bg-gray-800 p-2 rounded text-xs font-mono flex-1 min-h-32 overflow-auto scrollbar-hide">
                 <pre className="whitespace-pre-wrap">
                   {JSON.stringify(testResult.result || testResult.error, null, 2)}
                 </pre>
               </div>
             </div>
-          )}
+          )} */}
+          <PollTrigger
+            selectedTrigger={selectedTrigger}
+            isConfigDataManual={isConfigDataManual}
+            setIsConfigDataManual={setIsConfigDataManual}
+            configData={configData}
+            setConfigData={setConfigData}
+            configFields={configFields}
+            isConfigFieldsLoading={isConfigFieldsLoading}
+            additionalTriggerData={additionalTriggerData}
+            setAdditionalTriggerData={setAdditionalTriggerData}
+            handleTestTrigger={handleTestTrigger}
+            isLoading={isLoading}
+            activeFile={activeFile}
+            testResult={testResult}
+          />
         </CardContent>
       </Card>
     </div>

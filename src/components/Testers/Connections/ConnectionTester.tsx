@@ -132,13 +132,13 @@ export default function ConnectionTester() {
   }, [activeFile]);
 
   return (
-    <div className="h-full flex flex-col text-gray-300 p-3">
-      <Card className="flex flex-col h-full">
+    <div className="h-full min-h-0 flex flex-col text-gray-300 p-3 overflow-hidden">
+      <Card className="flex flex-col flex-1 min-h-0">
         <CardHeader className="flex-shrink-0">
           <CardTitle className="text-sm">Connection Test</CardTitle>
           <CardDescription className="text-xs">Test the connection authentication for your connector</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col flex-1 overflow-hidden space-y-3">
+        <CardContent className="flex flex-col flex-1 min-h-0 overflow-auto scrollbar-hide space-y-3 pr-1 mb-5">
           <div className="flex-shrink-0">
             {authType === "credentials" &&
               authFields?.map((field) => (
@@ -170,13 +170,13 @@ export default function ConnectionTester() {
           </Button>
 
           {testResult && (
-            <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 flex flex-col min-h-32">
               <div className="flex items-center gap-2 mb-2 flex-shrink-0">
                 <Badge variant={testResult.success ? "default" : "destructive"}>
                   {testResult.success ? "Success" : "Failed"}
                 </Badge>
               </div>
-              <div className="bg-gray-800 p-2 rounded text-xs font-mono max-h-32 overflow-auto">
+              <div className="bg-gray-800 p-2 rounded text-xs font-mono flex-1 min-h-32 overflow-auto scrollbar-hide">
                 <pre className="whitespace-pre-wrap">
                   {JSON.stringify(testResult.result || testResult.error, null, 2)}
                 </pre>

@@ -23,7 +23,7 @@ export default function RightPanel() {
         </button>
       </div>
       {!isCollapsed && (
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 min-h-0">
           <RightPanelTabs />
         </div>
       )}

@@ -30,8 +30,8 @@ export default function RightPanelTabs() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex border-b border-[#1e1e1e] bg-[#2d2d30]">
+    <div className="h-full flex flex-col min-h-0">
+      <div className="flex border-b border-[#1e1e1e] bg-[#2d2d30] flex-shrink-0 sticky top-0 z-10">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -46,7 +46,7 @@ export default function RightPanelTabs() {
           </button>
         ))}
       </div>
-      <div className="flex-1 overflow-auto">{renderContent()}</div>
+      <div className="flex-1 min-h-0 overflow-auto scrollbar-hide">{renderContent()}</div>
     </div>
   );
 }
