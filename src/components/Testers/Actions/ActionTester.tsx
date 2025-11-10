@@ -138,6 +138,7 @@ export default function ActionTester() {
     if (activeFile) {
       loadAvailableActions();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFile]);
 
   return (
@@ -226,7 +227,9 @@ export default function ActionTester() {
                 </Badge>
               </div>
               <div className="bg-gray-800 p-2 rounded text-xs font-mono flex-1 overflow-auto">
-                <pre className="whitespace-pre-wrap">{JSON.stringify(testResult.result || testResult.error, null, 2)}</pre>
+                <pre className="whitespace-pre-wrap">
+                  {JSON.stringify(testResult.result || testResult.error, null, 2)}
+                </pre>
               </div>
             </div>
           )}

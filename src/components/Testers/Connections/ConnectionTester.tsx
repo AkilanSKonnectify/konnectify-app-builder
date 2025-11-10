@@ -92,12 +92,6 @@ export default function ConnectionTester() {
       // Build context
       const context = {
         auth: authData,
-        logger: {
-          info: (...args: any[]) => append("info", args),
-          error: (...args: any[]) => append("error", args),
-          debug: (...args: any[]) => append("debug", args),
-          warn: (...args: any[]) => append("warn", args),
-        },
         payload: {},
       };
 

@@ -27,17 +27,17 @@ export default function TriggerTester() {
   const [authData, setAuthData] = useState("{}");
   const [isAuthDataManual, setIsAuthDataManual] = useState(connections?.length === 0);
   const [selectedConnection, setSelectedConnection] = useState(connections?.length ? connections?.[0] : null);
-  const [triggerData, setTriggerData] = useState("{}");
-  const [isTriggerDataManual, setIsTriggerDataManual] = useState(true);
+  const [isConfigDataManual, setIsConfigDataManual] = useState(true);
+  const now = new Date();
+  const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
   const [additionalTriggerData, setAdditionalTriggerData] = useState(
-    '{"since": "2024-01-01T00:00:00Z", "till": "2024-12-31T23:59:59Z", "cursor": null}'
+    JSON.stringify({ since: fiveMinutesAgo.toISOString(), till: now.toISOString(), cursor: null })
   );
   const [configData, setConfigData] = useState("{}");
-  const [selectedTrigger, setSelectedTrigger] = useState<StaticWebhookTrigger | WebhookTrigger | PollTrigger>();
+  const [selectedTrigger, setSelectedTrigger] = useState<string>();
   const [availableTriggers, setAvailableTriggers] = useState<Triggers>();
   const [isConfigFieldsLoading, setIsConfigFieldsLoading] = useState(false);
   const [configFields, setConfigFields] = useState<Field[]>();
-  console.log("ssssssssss", configFields);
   const [testResult, setTestResult] = useState<any>(null);
 
   async function ensureRunner() {
@@ -75,7 +75,7 @@ export default function TriggerTester() {
       if (triggerOptions && typeof triggerOptions === "object") {
         setAvailableTriggers(triggerOptions);
         if (Object.keys(triggerOptions || {}).length > 0 && !selectedTrigger) {
-          setSelectedTrigger(triggerOptions[0]);
+          setSelectedTrigger(Object.keys(triggerOptions)[0]);
         }
       }
     } catch (err) {
@@ -85,11 +85,20 @@ export default function TriggerTester() {
   }
 
   async function loadConfigAndInputFields() {
+    if (!selectedTrigger) return;
     try {
-      if (selectedTrigger?.has_config_fields) {
+      if (availableTriggers?.[selectedTrigger]?.has_config_fields) {
         append("info", ["Config Loading Config Fields...."]);
         setIsConfigFieldsLoading(true);
-        const result = await loadConfigFields(selectedTrigger, activeFile, ensureRunner, append, timeout, authData);
+        const result = await loadConfigFields(
+          "triggers",
+          selectedTrigger,
+          activeFile,
+          ensureRunner,
+          append,
+          timeout,
+          authData
+        );
         setConfigFields(result);
         append("info", ["Config fields loaded"]);
       }
@@ -113,7 +122,7 @@ export default function TriggerTester() {
 
     setIsLoading(true);
     setTestResult(null);
-    append("info", [`Starting trigger test for: ${selectedTrigger}`]);
+    append("info", [`Starting trigger test for: ${availableTriggers?.[selectedTrigger].id}...`]);
 
     try {
       await ensureEsbuildInitialized();
@@ -127,10 +136,10 @@ export default function TriggerTester() {
 
       try {
         parsedAuth = JSON.parse(authData);
-        parsedTriggerData = { ...JSON.parse(triggerData), ...JSON.parse(additionalTriggerData) };
+        parsedTriggerData = { ...JSON.parse(additionalTriggerData) };
         parsedConfig = JSON.parse(configData);
       } catch (e) {
-        append("warn", ["Invalid JSON in input data, using empty objects"]);
+        append("warn", ["Invalid JSON in input data, using empty objects:", String(e)]);
       }
 
       // Build context for trigger
@@ -143,17 +152,17 @@ export default function TriggerTester() {
       };
 
       // Run trigger poll function
-      const result = await runner.run(`triggers.${selectedTrigger}.poll`, context, {
+      const result = await runner.run(`triggers.${availableTriggers?.[selectedTrigger].id}.poll`, context, {
         proxyFetch: true,
         timeoutMs: timeout * 1000,
         operationData: {
           appId: activeFile.name,
-          triggerKey: selectedTrigger,
+          triggerKey: availableTriggers?.[selectedTrigger].id,
         },
       });
 
       setTestResult({ success: true, result });
-      append("info", [`Trigger ${selectedTrigger} executed successfully:`, result]);
+      append("info", [`Trigger ${availableTriggers?.[selectedTrigger].id} executed successfully:`, result]);
     } catch (err: any) {
       setTestResult({ success: false, error: String(err) });
       append("error", [String(err)]);
@@ -177,18 +186,11 @@ export default function TriggerTester() {
   }, [selectedConnection]);
 
   useEffect(() => {
-    if (!isTriggerDataManual && selectedTrigger && !configFields) {
-      loadConfigAndInputFields();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTriggerDataManual]);
-
-  useEffect(() => {
     if (selectedTrigger) {
       loadConfigAndInputFields();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTrigger]);
+  }, [selectedTrigger, authData]);
 
   return (
     <div className="h-full flex flex-col text-gray-300 p-3">
@@ -212,20 +214,20 @@ export default function TriggerTester() {
           <div className="text-xs text-gray-300 flex-shrink-0">
             <label className="mb-1 block">Select Trigger</label>
             <Select
-              value={selectedTrigger?.id}
-              onValueChange={(triggerId) => setSelectedTrigger(availableTriggers?.[triggerId])}
+              value={availableTriggers?.[selectedTrigger || ""]?.id}
+              onValueChange={(triggerId) => setSelectedTrigger(triggerId)}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a trigger" />
               </SelectTrigger>
               <SelectContent className="bg-[#252526] border border-slate-700 text-gray-100">
-                {Object.values(availableTriggers || {}).map((trigger) => (
+                {Object.keys(availableTriggers || {}).map((trigger) => (
                   <SelectItem
                     className="text-xs text-gray-300 bg-grey-500 border border-slate-700 hover:bg-gray-700 hover:text-white cursor-pointer"
-                    key={trigger.id}
-                    value={trigger.id}
+                    key={trigger}
+                    value={trigger}
                   >
-                    {trigger.title || trigger.id}
+                    {availableTriggers?.[trigger].title || availableTriggers?.[trigger].name || trigger}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -287,32 +289,32 @@ export default function TriggerTester() {
 
           <div className="flex-shrink-0">
             <div className="flex justify-between items-center">
-              <label className="text-xs text-gray-300 mb-1 block">Input Fields</label>
+              <label className="text-xs text-gray-300 mb-1 block">Input: </label>
               <div className="flex border border-gray-600 rounded overflow-hidden text-gray-300">
                 <Button
-                  onClick={() => setIsTriggerDataManual(true)}
+                  onClick={() => setIsConfigDataManual(true)}
                   size="sm"
                   className="rounded-none border-r border-gray-600 text-gray-300"
                 >
                   {"{}"}
                 </Button>
-                <Button
-                  onClick={() => setIsTriggerDataManual(false)}
-                  disabled={!selectedTrigger}
-                  size="sm"
-                  className="rounded-none text-gray-300"
-                >
+                <Button onClick={() => setIsConfigDataManual(false)} size="sm" className="rounded-none text-gray-300">
                   Load
                 </Button>
               </div>
             </div>
-            {isTriggerDataManual ? (
-              <Textarea
-                value={triggerData}
-                onChange={(e) => setTriggerData(e.target.value)}
-                placeholder="{}"
-                className="min-h-[60px] text-xs font-mono"
-              />
+            {isConfigDataManual ? (
+              <div className="mb-5">
+                <label className="text-xs text-gray-300 mb-1 block">Config Fields (JSON)</label>
+                <Textarea
+                  value={configData}
+                  onChange={(e) => setConfigData(e.target.value)}
+                  placeholder="{}"
+                  className="min-h-[60px] text-xs font-mono"
+                />
+              </div>
+            ) : !selectedTrigger ? (
+              <p className="text-red-400 text-sm m-3"> Select a trigger first!</p>
             ) : isConfigFieldsLoading ? (
               <Spinner text="Loading config fields" size="sm" />
             ) : !configFields ? (
@@ -328,9 +330,11 @@ export default function TriggerTester() {
                     type={field.type}
                     name={field.name}
                     placeholder={`Enter ${field.name}`}
-                    value={JSON.parse(triggerData)?.[field.name]}
+                    value={JSON.parse(configData)?.[field.name] || ""}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setAuthData((prev: any) => ({ ...prev, [field.name]: e.target.value }))
+                      setConfigData((prev: string) =>
+                        JSON.stringify({ ...JSON.parse(prev), [field.name]: e.target.value })
+                      )
                     }
                   />
                 </div>
@@ -348,20 +352,10 @@ export default function TriggerTester() {
             />
           </div>
 
-          <div className="flex-shrink-0">
-            <label className="text-xs text-gray-300 mb-1 block">Config Fields (JSON)</label>
-            <Textarea
-              value={configData}
-              onChange={(e) => setConfigData(e.target.value)}
-              placeholder='{"module": "Contact"}'
-              className="min-h-[60px] text-xs font-mono"
-            />
-          </div>
-
           <Button
             onClick={handleTestTrigger}
             disabled={isLoading || !activeFile || !selectedTrigger}
-            className="w-full flex-shrink-0"
+            className="w-full flex-shrink-0 border rounded-sm"
             size="sm"
           >
             {isLoading ? "Testing..." : "Test Trigger"}

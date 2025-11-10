@@ -1,17 +1,17 @@
 import { ensureEsbuildInitialized } from "@/hooks/useEsbuild";
 import { SandboxRunner } from "@/lib/sandboxRunner";
-import { PollTrigger, StaticWebhookTrigger, WebhookTrigger } from "@/types/konnectify-dsl";
 import { FileData } from "@/types/localStorage";
 
 export async function loadConfigFields(
-  trigger: StaticWebhookTrigger | WebhookTrigger | PollTrigger | undefined,
+  eventType: "triggers" | "actions",
+  event: string | undefined,
   activeFile: FileData | undefined,
   ensureRunner: () => Promise<SandboxRunner>,
   append: any,
   timeout: number,
   authData: any = {}
 ) {
-  if (!activeFile?.content || !trigger) return;
+  if (!activeFile?.content || !event) return;
 
   try {
     await ensureEsbuildInitialized();
@@ -20,7 +20,7 @@ export async function loadConfigFields(
 
     // Parse input data
     let parsedAuth = {};
-    let parsedTriggerData = {};
+    let parsedEventData = {};
     let parsedConfig = {};
 
     try {
@@ -29,22 +29,22 @@ export async function loadConfigFields(
       append("warn", ["Invalid JSON in input data, using empty objects"]);
     }
 
-    // Build context for trigger
+    // Build context for event
     const context = {
       auth: parsedAuth,
       payload: {
-        data: parsedTriggerData,
+        data: parsedEventData,
         config_fields: parsedConfig,
       },
     };
 
-    // Run trigger poll function
-    const result = await runner.run(`triggers.${trigger.name}.config_fields.fields`, context, {
+    // Run event config_fields.fields function
+    const result = await runner.run(`${eventType}.${event}.config_fields.fields`, context, {
       proxyFetch: true,
       timeoutMs: timeout * 1000,
       operationData: {
         appId: activeFile.name,
-        triggerKey: trigger,
+        operationKey: event,
       },
     });
 
@@ -55,7 +55,8 @@ export async function loadConfigFields(
 }
 
 export async function loadInputFields(
-  trigger: StaticWebhookTrigger | WebhookTrigger | PollTrigger | undefined,
+  eventType: "triggers" | "actions",
+  event: string | undefined,
   activeFile: FileData | undefined,
   ensureRunner: () => Promise<SandboxRunner>,
   append: any,
@@ -63,7 +64,7 @@ export async function loadInputFields(
   authData: any,
   configData: any = {}
 ) {
-  if (!activeFile?.content) return;
+  if (!activeFile?.content || !event) return;
 
   try {
     await ensureEsbuildInitialized();
@@ -72,7 +73,7 @@ export async function loadInputFields(
 
     // Parse input data
     let parsedAuth = {};
-    let parsedTriggerData = {};
+    let parsedEventData = {};
     let parsedConfig = {};
 
     try {
@@ -82,22 +83,22 @@ export async function loadInputFields(
       append("warn", ["Invalid JSON in input data, using empty objects"]);
     }
 
-    // Build context for trigger
+    // Build context for event
     const context = {
       auth: parsedAuth,
       payload: {
-        data: parsedTriggerData,
+        data: parsedEventData,
         config_fields: parsedConfig,
       },
     };
 
-    // Run trigger poll function
-    const result = await runner.run(`triggers.${trigger}.input_schema.fields`, context, {
+    // Run event input_schema.fields function
+    const result = await runner.run(`${eventType}.${event}.input_schema.fields`, context, {
       proxyFetch: true,
       timeoutMs: timeout * 1000,
       operationData: {
         appId: activeFile.name,
-        triggerKey: trigger,
+        operationKey: event,
       },
     });
 

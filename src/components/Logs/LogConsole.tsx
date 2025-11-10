@@ -60,6 +60,7 @@ export default function LogConsole() {
       window.removeEventListener("mouseup", handleMouseUp);
       window.removeEventListener("keydown", handleKeyDown);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isResizing]);
 
   // Toggle collapse/expand
@@ -83,6 +84,7 @@ export default function LogConsole() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCollapsed, height]);
 
   // Scroll to bottom when logs update
