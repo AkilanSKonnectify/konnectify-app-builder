@@ -4,11 +4,11 @@ import { useLogs } from "@/context/LogContext";
 import { ensureEsbuildInitialized, useEsbuild } from "@/hooks/useEsbuild";
 import { useEditor } from "@/context/EditorContext";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ConnectionField } from "@/types/konnectify-dsl";
+import JsonViewer from "../JsonViewer";
 
 export default function ConnectionTester() {
   useEsbuild();
@@ -138,7 +138,7 @@ export default function ConnectionTester() {
           <CardTitle className="text-sm">Connection Test</CardTitle>
           <CardDescription className="text-xs">Test the connection authentication for your connector</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col flex-1 min-h-0 overflow-auto scrollbar-hide space-y-3 pr-1 mb-5">
+        <CardContent className="flex flex-col flex-1 min-h-0 overflow-auto scrollbar-custom space-y-3 pr-1 mb-5">
           <div className="flex-shrink-0">
             {authType === "credentials" &&
               authFields?.map((field) => (
@@ -176,10 +176,8 @@ export default function ConnectionTester() {
                   {testResult.success ? "Success" : "Failed"}
                 </Badge>
               </div>
-              <div className="bg-gray-800 p-2 rounded text-xs font-mono flex-1 min-h-32 overflow-auto scrollbar-hide">
-                <pre className="whitespace-pre-wrap">
-                  {JSON.stringify(testResult.result || testResult.error, null, 2)}
-                </pre>
+              <div className="flex-1 min-h-32">
+                <JsonViewer data={testResult.result || testResult.error} height="200px" />
               </div>
               {testResult?.success && testResult?.result?.["validated"] && (
                 <div className="w-full mt-2 flex flex-col gap-3 p-3 flex-shrink-0">

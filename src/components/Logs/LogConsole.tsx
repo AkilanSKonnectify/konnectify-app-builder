@@ -90,7 +90,7 @@ export default function LogConsole() {
   // Scroll to bottom when logs update
   useEffect(() => {
     if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
-  }, [logs]);
+  }, [logs, isCollapsed]);
 
   return (
     <div
@@ -129,7 +129,7 @@ export default function LogConsole() {
 
       {/* Logs only visible when expanded */}
       {!isCollapsed && (
-        <div ref={ref} className="p-2 overflow-auto h-[calc(100%-60px)]">
+        <div ref={ref} className="p-2 overflow-auto scrollbar-custom h-[calc(100%-60px)]">
           {logs.length === 0 && <div className="text-gray-600 text-xs italic">No logs yet</div>}
           {logs.map((l: LogEntry) => (
             <div key={l.id} className="mb-1">

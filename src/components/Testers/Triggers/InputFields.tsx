@@ -1,13 +1,11 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/types/konnectify-dsl";
-import { FileData } from "@/types/localStorage";
 import { cn } from "@/utils/utils";
+import JsonEditor from "../JsonEditor";
 
-interface PollTriggerProps {
+interface InputFieldsProps {
   selectedTrigger: string | undefined;
   isConfigDataManual: boolean;
   setIsConfigDataManual: (val: boolean) => void;
@@ -15,15 +13,9 @@ interface PollTriggerProps {
   setConfigData: (val: React.SetStateAction<string>) => void;
   configFields: Field[] | undefined;
   isConfigFieldsLoading: boolean;
-  additionalTriggerData: string;
-  setAdditionalTriggerData: (val: React.SetStateAction<string>) => void;
-  handleTestTrigger: () => void;
-  isLoading: boolean;
-  activeFile: FileData | undefined;
-  testResult: any;
 }
 
-const PollTrigger = ({
+const InputFields = ({
   selectedTrigger,
   isConfigDataManual,
   setIsConfigDataManual,
@@ -31,13 +23,7 @@ const PollTrigger = ({
   setConfigData,
   configFields,
   isConfigFieldsLoading,
-  additionalTriggerData,
-  setAdditionalTriggerData,
-  handleTestTrigger,
-  isLoading,
-  activeFile,
-  testResult,
-}: PollTriggerProps) => {
+}: InputFieldsProps) => {
   return (
     <div>
       <div className="flex-shrink-0">
@@ -69,12 +55,7 @@ const PollTrigger = ({
         {isConfigDataManual ? (
           <div className="mb-5">
             <label className="text-xs text-gray-300 mb-1 block">Config Fields (JSON)</label>
-            <Textarea
-              value={configData}
-              onChange={(e) => setConfigData(e.target.value)}
-              placeholder="{}"
-              className="min-h-[60px] text-xs font-mono"
-            />
+            <JsonEditor value={configData} onChange={setConfigData} placeholder="{}" height="120px" />
           </div>
         ) : !selectedTrigger ? (
           <p className="text-red-400 text-sm m-3"> Select a trigger first!</p>
@@ -102,40 +83,8 @@ const PollTrigger = ({
           ))
         )}
       </div>
-
-      <div className="flex-shrink-0">
-        <label className="text-xs text-gray-300 mb-1 block">Additional data (JSON)</label>
-        <Textarea
-          value={additionalTriggerData}
-          onChange={(e) => setAdditionalTriggerData(e.target.value)}
-          placeholder='{"since": "2024-01-01T00:00:00Z", "till": "2024-12-31T23:59:59Z", "cursor": null}'
-          className="min-h-[60px] text-xs font-mono"
-        />
-      </div>
-
-      <Button
-        onClick={handleTestTrigger}
-        disabled={isLoading || !activeFile || !selectedTrigger}
-        className="w-full flex-shrink-0 border rounded-sm mt-3"
-        size="sm"
-      >
-        {isLoading ? "Testing..." : "Test Trigger"}
-      </Button>
-
-      {testResult && (
-        <div className="flex-1 flex flex-col min-h-32">
-          <div className="flex items-center gap-2 mb-2 flex-shrink-0">
-            <Badge variant={testResult.success ? "default" : "destructive"}>
-              {testResult.success ? "Success" : "Failed"}
-            </Badge>
-          </div>
-          <div className="bg-gray-800 p-2 rounded text-xs font-mono flex-1 min-h-32 overflow-auto scrollbar-hide">
-            <pre className="whitespace-pre-wrap">{JSON.stringify(testResult.result || testResult.error, null, 2)}</pre>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-export default PollTrigger;
+export default InputFields;

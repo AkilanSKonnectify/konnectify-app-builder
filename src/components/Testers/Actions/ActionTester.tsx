@@ -4,11 +4,12 @@ import { useLogs } from "@/context/LogContext";
 import { ensureEsbuildInitialized, useEsbuild } from "@/hooks/useEsbuild";
 import { useEditor } from "@/context/EditorContext";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import JsonViewer from "../JsonViewer";
+import JsonEditor from "../JsonEditor";
 
 export default function ActionTester() {
   useEsbuild();
@@ -148,7 +149,7 @@ export default function ActionTester() {
           <CardTitle className="text-sm">Action Test</CardTitle>
           <CardDescription className="text-xs">Test action execution functionality for your connector</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col flex-1 min-h-0 overflow-auto scrollbar-hide space-y-3 pr-1 mb-5">
+        <CardContent className="flex flex-col flex-1 min-h-0 overflow-auto scrollbar-custom space-y-3 pr-1 mb-5">
           <div className="text-xs flex justify-start gap-3 flex-shrink-0">
             <span>Set timeout(in sec): </span>
             <Input
@@ -182,31 +183,31 @@ export default function ActionTester() {
 
           <div className="flex-shrink-0">
             <label className="text-xs text-gray-300 mb-1 block">Auth Data (JSON)</label>
-            <Textarea
+            <JsonEditor
               value={authData}
-              onChange={(e) => setAuthData(e.target.value)}
-              placeholder='{"access_token": "your_token"}'
-              className="min-h-[60px] text-xs font-mono"
+              onChange={setAuthData}
+              placeholder='{\n  "access_token": "your_token"\n}'
+              height="120px"
             />
           </div>
 
           <div className="flex-shrink-0">
             <label className="text-xs text-gray-300 mb-1 block">Input Fields (JSON)</label>
-            <Textarea
+            <JsonEditor
               value={actionData}
-              onChange={(e) => setActionData(e.target.value)}
-              placeholder='{"name": "John Doe", "email": "john@example.com"}'
-              className="min-h-[60px] text-xs font-mono"
+              onChange={setActionData}
+              placeholder='{\n  "name": "John Doe",\n  "email": "john@example.com"\n}'
+              height="120px"
             />
           </div>
 
           <div className="flex-shrink-0">
             <label className="text-xs text-gray-300 mb-1 block">Config Fields (JSON)</label>
-            <Textarea
+            <JsonEditor
               value={configData}
-              onChange={(e) => setConfigData(e.target.value)}
-              placeholder='{"module": "Contact"}'
-              className="min-h-[60px] text-xs font-mono"
+              onChange={setConfigData}
+              placeholder='{\n  "module": "Contact"\n}'
+              height="120px"
             />
           </div>
 
@@ -226,10 +227,8 @@ export default function ActionTester() {
                   {testResult.success ? "Success" : "Failed"}
                 </Badge>
               </div>
-              <div className="bg-gray-800 p-2 rounded text-xs font-mono flex-1 min-h-32 overflow-auto scrollbar-hide">
-                <pre className="whitespace-pre-wrap">
-                  {JSON.stringify(testResult.result || testResult.error, null, 2)}
-                </pre>
+              <div className="flex-1 min-h-32">
+                <JsonViewer data={testResult.result || testResult.error} height="200px" />
               </div>
             </div>
           )}

@@ -46,7 +46,7 @@ export default function RightPanelTabs() {
           </button>
         ))}
       </div>
-      <div className="flex-1 min-h-0 overflow-auto scrollbar-hide">{renderContent()}</div>
+      <div className="flex-1 min-h-0 overflow-auto scrollbar-custom">{renderContent()}</div>
     </div>
   );
 }

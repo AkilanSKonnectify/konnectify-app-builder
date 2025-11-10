@@ -4,16 +4,16 @@ import { useLogs } from "@/context/LogContext";
 import { ensureEsbuildInitialized, useEsbuild } from "@/hooks/useEsbuild";
 import { useEditor } from "@/context/EditorContext";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Field, Triggers } from "@/types/konnectify-dsl";
 import { loadConfigFields } from "../loadRequiredFields";
-import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/utils/utils";
-import PollTrigger from "./PollTrigger";
+import InputFields from "./InputFields";
+import JsonViewer from "../JsonViewer";
+import JsonEditor from "../JsonEditor";
 
 export default function TriggerTester() {
   useEsbuild();
@@ -41,6 +41,14 @@ export default function TriggerTester() {
   const [isConfigFieldsLoading, setIsConfigFieldsLoading] = useState(false);
   const [configFields, setConfigFields] = useState<Field[]>();
   const [testResult, setTestResult] = useState<any>(null);
+  const [testTab, setTestTab] = useState<"input" | "sample" | "poll" | "output">("poll");
+
+  const tabs: { id: "input" | "sample" | "poll" | "output"; label: string }[] = [
+    { id: "input", label: "Config fields" },
+    { id: "sample", label: "Sample data" },
+    { id: "poll", label: "Poll data" },
+    { id: "output", label: "Output Schema" },
+  ];
 
   async function ensureRunner() {
     if (!runnerRef.current) {
@@ -154,14 +162,24 @@ export default function TriggerTester() {
       };
 
       // Run trigger poll function
-      const result = await runner.run(`triggers.${availableTriggers?.[selectedTrigger].id}.poll`, context, {
-        proxyFetch: true,
-        timeoutMs: timeout * 1000,
-        operationData: {
-          appId: activeFile.name,
-          triggerKey: availableTriggers?.[selectedTrigger].id,
-        },
-      });
+      const result = await runner.run(
+        `triggers.${availableTriggers?.[selectedTrigger].id}.${
+          testTab === "poll"
+            ? "poll"
+            : testTab === "sample"
+            ? "sample"
+            : `${testTab === "input" ? "config_fields" : "output_schema"}.fields`
+        }`,
+        context,
+        {
+          proxyFetch: true,
+          timeoutMs: timeout * 1000,
+          operationData: {
+            appId: activeFile.name,
+            triggerKey: availableTriggers?.[selectedTrigger].id,
+          },
+        }
+      );
 
       setTestResult({ success: true, result });
       append("info", [`Trigger ${availableTriggers?.[selectedTrigger].id} executed successfully:`, result]);
@@ -201,7 +219,7 @@ export default function TriggerTester() {
           <CardTitle className="text-sm">Trigger Test</CardTitle>
           <CardDescription className="text-xs">Test trigger polling functionality for your connector</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col flex-1 min-h-0 overflow-auto scrollbar-hide space-y-3 pr-1 mb-5">
+        <CardContent className="flex flex-col flex-1 min-h-0 overflow-auto scrollbar-custom space-y-3 pr-1 mb-5">
           <div className="text-xs flex justify-start gap-3 flex-shrink-0">
             <span>Set timeout(in sec): </span>
             <Input
@@ -264,11 +282,11 @@ export default function TriggerTester() {
               </div>
             </div>
             {isAuthDataManual ? (
-              <Textarea
+              <JsonEditor
                 value={authData}
-                onChange={(e) => setAuthData(e.target.value)}
-                placeholder='{"access_token": "your_token"}'
-                className="min-h-[60px] text-xs font-mono"
+                onChange={setAuthData}
+                placeholder='{\n  "access_token": "your_token"\n}'
+                height="120px"
               />
             ) : (
               <Select
@@ -295,80 +313,43 @@ export default function TriggerTester() {
             )}
           </div>
 
-          {/* <div className="flex-shrink-0">
-            <div className="flex justify-between items-center">
-              <label className="text-xs text-gray-300 mb-1 block">Input: </label>
-              <div className="flex border-b border-[#1e1e1e] bg-[#2d2d30] rounded overflow-hidden text-gray-300">
-                <Button
-                  onClick={() => setIsConfigDataManual(true)}
-                  size="sm"
-                  className={cn(
-                    "rounded-none border-r border-gray-600 text-gray-300",
-                    isConfigDataManual ? "bg-[#1e1e1e] text-white" : "bg-[#2d2d30] text-[#969696]"
-                  )}
-                >
-                  {"{}"}
-                </Button>
-                <Button
-                  onClick={() => setIsConfigDataManual(false)}
-                  size="sm"
-                  className={cn(
-                    "rounded-none border-r border-gray-600 text-gray-300",
-                    !isConfigDataManual ? "bg-[#1e1e1e] text-white" : "bg-[#2d2d30] text-[#969696]"
-                  )}
-                >
-                  Load
-                </Button>
-              </div>
-            </div>
-            {isConfigDataManual ? (
-              <div className="mb-5">
-                <label className="text-xs text-gray-300 mb-1 block">Config Fields (JSON)</label>
-                <Textarea
-                  value={configData}
-                  onChange={(e) => setConfigData(e.target.value)}
-                  placeholder="{}"
-                  className="min-h-[60px] text-xs font-mono"
-                />
-              </div>
-            ) : !selectedTrigger ? (
-              <p className="text-red-400 text-sm m-3"> Select a trigger first!</p>
-            ) : isConfigFieldsLoading ? (
-              <Spinner text="Loading config fields" size="sm" />
-            ) : !configFields ? (
-              <p className="text-red-400 text-sm m-3"> Error loading config fields</p>
-            ) : (
-              configFields?.map((field) => (
-                <div key={field.name} className="mb-5">
-                  <label key={field.name} className="text-xs text-gray-300 mb-1 block">
-                    {field?.label || field.name}
-                  </label>
-                  <Input
-                    className="text-xs font-mono"
-                    type={field.type}
-                    name={field.name}
-                    placeholder={`Enter ${field.name}`}
-                    value={JSON.parse(configData)?.[field.name] || ""}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setConfigData((prev: string) =>
-                        JSON.stringify({ ...JSON.parse(prev), [field.name]: e.target.value })
-                      )
-                    }
-                  />
-                </div>
-              ))
-            )}
+          <div className="flex border-b border-[#1e1e1e] bg-[#2d2d30] flex-shrink-0 sticky top-0 z-10">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setTestTab(tab.id)}
+                className={`flex-1 px-2 py-2.5 border-none cursor-pointer text-xs ${
+                  testTab === tab.id
+                    ? "bg-[#1e1e1e] text-white border-b-2 border-b-[#0e639c]"
+                    : "bg-[#2d2d30] text-[#969696]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
           <div className="flex-shrink-0">
             <label className="text-xs text-gray-300 mb-1 block">Additional data (JSON)</label>
-            <Textarea
+            <JsonEditor
               value={additionalTriggerData}
-              onChange={(e) => setAdditionalTriggerData(e.target.value)}
-              placeholder='{"since": "2024-01-01T00:00:00Z", "till": "2024-12-31T23:59:59Z", "cursor": null}'
-              className="min-h-[60px] text-xs font-mono"
+              onChange={setAdditionalTriggerData}
+              placeholder='{\n  "since": "2024-01-01T00:00:00Z",\n  "till": "2024-12-31T23:59:59Z",\n  "cursor": null\n}'
+              height="120px"
             />
           </div>
+
+          {testTab !== "input" && selectedTrigger && availableTriggers?.[selectedTrigger]?.has_config_fields && (
+            <InputFields
+              selectedTrigger={selectedTrigger}
+              isConfigDataManual={isConfigDataManual}
+              setIsConfigDataManual={setIsConfigDataManual}
+              configData={configData}
+              setConfigData={setConfigData}
+              configFields={configFields}
+              isConfigFieldsLoading={isConfigFieldsLoading}
+            />
+          )}
 
           <Button
             onClick={handleTestTrigger}
@@ -376,7 +357,7 @@ export default function TriggerTester() {
             className="w-full flex-shrink-0 border rounded-sm"
             size="sm"
           >
-            {isLoading ? "Testing..." : "Test Trigger"}
+            {isLoading ? "Testing..." : `Test ${testTab}`}
           </Button>
 
           {testResult && (
@@ -386,28 +367,11 @@ export default function TriggerTester() {
                   {testResult.success ? "Success" : "Failed"}
                 </Badge>
               </div>
-              <div className="bg-gray-800 p-2 rounded text-xs font-mono flex-1 min-h-32 overflow-auto scrollbar-hide">
-                <pre className="whitespace-pre-wrap">
-                  {JSON.stringify(testResult.result || testResult.error, null, 2)}
-                </pre>
+              <div className="flex-1 min-h-32">
+                <JsonViewer data={testResult.result || testResult.error} height="200px" />
               </div>
             </div>
-          )} */}
-          <PollTrigger
-            selectedTrigger={selectedTrigger}
-            isConfigDataManual={isConfigDataManual}
-            setIsConfigDataManual={setIsConfigDataManual}
-            configData={configData}
-            setConfigData={setConfigData}
-            configFields={configFields}
-            isConfigFieldsLoading={isConfigFieldsLoading}
-            additionalTriggerData={additionalTriggerData}
-            setAdditionalTriggerData={setAdditionalTriggerData}
-            handleTestTrigger={handleTestTrigger}
-            isLoading={isLoading}
-            activeFile={activeFile}
-            testResult={testResult}
-          />
+          )}
         </CardContent>
       </Card>
     </div>
