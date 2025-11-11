@@ -33,13 +33,16 @@ export default function ConnectionTester() {
       runnerRef.current.onConsole = (level, args) =>
         append(level === "info" ? "info" : level === "warn" ? "warn" : level === "debug" ? "debug" : "error", args);
 
-      runnerRef.current.onNetworkRequest = (req, respond) => {
-        fetch(req.url, req.options)
-          .then(async (r) => {
-            const text = await r.text();
-            respond({ ok: r.ok, status: r.status, statusText: r.statusText, text });
-          })
-          .catch((err) => respond({ error: String(err) }));
+      runnerRef.current.onNetworkRequest = async (req, respond) => {
+        try {
+          // Use proxyFetch to handle CORS issues in production
+          const { proxyFetch } = await import("@/utils/proxyFetch");
+          const r = await proxyFetch(req.url, req.options);
+          const text = await r.text();
+          respond({ ok: r.ok, status: r.status, statusText: r.statusText, text });
+        } catch (err) {
+          respond({ error: String(err) });
+        }
       };
 
       await runnerRef.current.init();
