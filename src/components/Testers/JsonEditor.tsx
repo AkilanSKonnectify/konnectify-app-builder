@@ -68,7 +68,7 @@ export default function JsonEditor({
     // Listen to content changes - use a disposable to avoid multiple listeners
     changeListenerRef.current = model.onDidChangeContent(() => {
       if (!isUpdatingFromProps.current) {
-        const currentValue = model.getValue();
+        const currentValue = model?.getValue() || "";
         onChange(currentValue);
       }
     });
