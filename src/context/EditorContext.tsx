@@ -40,6 +40,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
   const [openTabs, setOpenTabs] = useState<string[]>([]);
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const isMac = navigator.platform.toUpperCase().includes("MAC");
 
   useEffect(() => {
     const savedState = localStorage.getItem(STORAGE_KEY);
@@ -194,12 +195,13 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === "n") {
+      const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
+      if (ctrlOrCmd && e.altKey && e.key.toLowerCase() === "n") {
         e.preventDefault();
         createNewFile();
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === "o") {
+      if (ctrlOrCmd && e.altKey && e.key.toLowerCase() === "o") {
         e.preventDefault();
         const input = document.createElement("input");
         input.type = "file";
@@ -213,7 +215,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         input.click();
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === "w") {
+      if (ctrlOrCmd && e.altKey && e.key.toLowerCase() === "w") {
         e.preventDefault();
         closeTab(activeFileId!);
       }
