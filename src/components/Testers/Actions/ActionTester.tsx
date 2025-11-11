@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { SandboxRunner } from "@/lib/sandboxRunner";
 import { useLogs } from "@/context/LogContext";
 import { ensureEsbuildInitialized, useEsbuild } from "@/hooks/useEsbuild";
@@ -8,6 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Actions, Field } from "@/types/konnectify-dsl";
+import { loadConfigFields, loadInputFields } from "../loadRequiredFields";
+import { cn } from "@/utils/utils";
+import InputFields from "./InputFields";
 import JsonViewer from "../JsonViewer";
 import JsonEditor from "../JsonEditor";
 
@@ -16,17 +20,34 @@ export default function ActionTester() {
 
   const { files, activeFileId } = useEditor();
   const activeFile = files.find((f) => f.id === activeFileId);
+  const connections = activeFile?.connections;
 
   const runnerRef = useRef<SandboxRunner | null>(null);
   const { append } = useLogs();
   const [isLoading, setIsLoading] = useState(false);
   const [timeout, setTimeout] = useState<number>(30);
   const [authData, setAuthData] = useState("{}");
-  const [actionData, setActionData] = useState("{}");
+  const [isAuthDataManual, setIsAuthDataManual] = useState(connections?.length === 0);
+  const [selectedConnection, setSelectedConnection] = useState(connections?.length ? connections?.[0] : null);
+  const [isInputDataManual, setIsInputDataManual] = useState(true);
+  const [inputData, setInputData] = useState("{}");
   const [configData, setConfigData] = useState("{}");
   const [selectedAction, setSelectedAction] = useState("");
-  const [availableActions, setAvailableActions] = useState<string[]>([]);
+  const [availableActions, setAvailableActions] = useState<Actions>();
+  const [isConfigFieldsLoading, setIsConfigFieldsLoading] = useState(false);
+  const [configFields, setConfigFields] = useState<Field[]>();
+  const [isInputFieldsLoading, setIsInputFieldsLoading] = useState(false);
+  const [inputFields, setInputFields] = useState<Field[]>();
   const [testResult, setTestResult] = useState<any>(null);
+
+  const [testTab, setTestTab] = useState<"config" | "input" | "execute" | "output">("execute");
+
+  const tabs: { id: "config" | "input" | "execute" | "output"; label: string }[] = [
+    { id: "config", label: "Config fields" },
+    { id: "input", label: "Input schema" },
+    { id: "execute", label: "Execute data" },
+    { id: "output", label: "Output schema" },
+  ];
 
   async function ensureRunner() {
     if (!runnerRef.current) {
@@ -61,14 +82,85 @@ export default function ActionTester() {
       const actions = await runner.run("actions", {}, { timeoutMs: 5000 });
       const actionOptions = actions?.value;
       if (actionOptions && typeof actionOptions === "object") {
+        setAvailableActions(actionOptions);
         const actionNames = Object.keys(actionOptions);
-        setAvailableActions(actionNames);
         if (actionNames.length > 0 && !selectedAction) {
           setSelectedAction(actionNames[0]);
         }
       }
     } catch (err) {
       append("warn", ["Could not load actions:", String(err)]);
+    }
+  }
+
+  async function loadConfigAndInputFields() {
+    if (!selectedAction) return;
+
+    try {
+      setConfigFields(undefined);
+      setConfigData("{}");
+      setInputFields(undefined);
+      setInputData("{}");
+      if (availableActions?.[selectedAction]?.has_config_fields) {
+        append("info", ["Loading Config Fields...."]);
+        setIsConfigFieldsLoading(true);
+        const result = await loadConfigFields(
+          "actions",
+          selectedAction,
+          activeFile,
+          ensureRunner,
+          append,
+          timeout,
+          authData
+        );
+        setConfigFields(result);
+        append("info", ["Config fields loaded"]);
+      } else {
+        append("info", ["Loading Input Schema...."]);
+        setIsInputFieldsLoading(true);
+        const result = await loadInputFields(
+          "actions",
+          selectedAction,
+          activeFile,
+          ensureRunner,
+          append,
+          timeout,
+          authData
+        );
+        setInputFields(result);
+        append("info", ["Input schema loaded"]);
+      }
+    } catch (err) {
+      append("error", [String(err)]);
+    } finally {
+      setIsConfigFieldsLoading(false);
+      setIsInputFieldsLoading(false);
+    }
+  }
+
+  async function loadInputFieldsWithConfigData() {
+    if (!selectedAction) return;
+
+    try {
+      append("info", ["Loading Input Schema...."]);
+      setIsInputFieldsLoading(true);
+      const result = await loadInputFields(
+        "actions",
+        selectedAction,
+        activeFile,
+        ensureRunner,
+        append,
+        timeout,
+        authData,
+        configData
+      );
+      setInputFields(result);
+      append("info", ["Input schema loaded"]);
+    } catch (err) {
+      append("error", [String(err)]);
+    } finally {
+      setIsConfigFieldsLoading(false);
+      setIsInputFieldsLoading(false);
     }
   }
 
@@ -85,7 +177,7 @@ export default function ActionTester() {
 
     setIsLoading(true);
     setTestResult(null);
-    append("info", [`Starting action test for: ${selectedAction}`]);
+    append("info", [`Starting action test for: ${selectedAction}: ${testTab}...`]);
 
     try {
       await ensureEsbuildInitialized();
@@ -99,7 +191,7 @@ export default function ActionTester() {
 
       try {
         parsedAuth = JSON.parse(authData);
-        parsedActionData = JSON.parse(actionData);
+        parsedActionData = JSON.parse(inputData);
         parsedConfig = JSON.parse(configData);
       } catch (e) {
         append("warn", ["Invalid JSON in input data, using empty objects"]);
@@ -115,17 +207,27 @@ export default function ActionTester() {
       };
 
       // Run action execute function
-      const result = await runner.run(`actions.${selectedAction}.execute`, context, {
-        proxyFetch: true,
-        timeoutMs: timeout * 1000,
-        operationData: {
-          appId: activeFile.name,
-          operationKey: selectedAction,
-        },
-      });
+      const result = await runner.run(
+        `actions.${selectedAction}.${
+          testTab === "execute"
+            ? "execute"
+            : `${
+                testTab === "config" ? "config_fields" : testTab === "input" ? "input_schema" : "output_schema"
+              }.fields`
+        }`,
+        context,
+        {
+          proxyFetch: true,
+          timeoutMs: timeout * 1000,
+          operationData: {
+            appId: activeFile.name,
+            operationKey: selectedAction,
+          },
+        }
+      );
 
       setTestResult({ success: true, result });
-      append("info", [`Action ${selectedAction} executed successfully:`, result]);
+      append("info", [`Action ${selectedAction}: ${testTab} executed successfully:`, result]);
     } catch (err: any) {
       setTestResult({ success: false, error: String(err) });
       append("error", [String(err)]);
@@ -135,12 +237,38 @@ export default function ActionTester() {
     }
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (activeFile) {
       loadAvailableActions();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFile]);
+
+  useEffect(() => {
+    if (selectedConnection) {
+      setAuthData(JSON.stringify(selectedConnection?.fields));
+    }
+  }, [selectedConnection]);
+
+  useEffect(() => {
+    if (selectedAction) {
+      loadConfigAndInputFields();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAction, authData]);
+
+  useEffect(() => {
+    const isAllConfigDataCovered = configFields?.every((field) => {
+      const parsedConfigData = JSON.parse(configData);
+      return field.name in parsedConfigData && parsedConfigData[field.name];
+    });
+    if (!isAllConfigDataCovered) {
+      setInputFields([]);
+      setInputData("{}");
+    } else {
+      loadInputFieldsWithConfigData();
+    }
+  }, [configData, configFields]);
 
   return (
     <div className="h-full min-h-0 flex flex-col text-gray-300 p-3 overflow-hidden">
@@ -168,13 +296,13 @@ export default function ActionTester() {
                 <SelectValue placeholder="Select an action" />
               </SelectTrigger>
               <SelectContent className="bg-[#252526] border border-slate-700 text-gray-100">
-                {availableActions.map((action) => (
+                {Object.keys(availableActions || {}).map((action) => (
                   <SelectItem
                     className="text-xs text-gray-300 bg-grey-500 border border-slate-700 hover:bg-gray-700 hover:text-white cursor-pointer"
                     key={action}
                     value={action}
                   >
-                    {action}
+                    {availableActions?.[action].title || availableActions?.[action].name || action}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -182,42 +310,105 @@ export default function ActionTester() {
           </div>
 
           <div className="flex-shrink-0">
-            <label className="text-xs text-gray-300 mb-1 block">Auth Data (JSON)</label>
-            <JsonEditor
-              value={authData}
-              onChange={setAuthData}
-              placeholder='{\n  "access_token": "your_token"\n}'
-              height="120px"
-            />
+            <div className="flex justify-between items-center">
+              <label className="text-xs text-gray-300 mb-1 block">Auth Data {isAuthDataManual && "(JSON)"}</label>
+              <div className="flex border-b border-[#1e1e1e] bg-[#2d2d30] rounded overflow-hidden text-gray-300">
+                <Button
+                  onClick={() => setIsAuthDataManual(true)}
+                  size="sm"
+                  className={cn(
+                    "rounded-none border-r border-gray-600 text-gray-300",
+                    isAuthDataManual ? "bg-[#1e1e1e] text-white" : "bg-[#2d2d30] text-[#969696]"
+                  )}
+                >
+                  {"{}"}
+                </Button>
+                <Button
+                  onClick={() => setIsAuthDataManual(false)}
+                  disabled={!connections}
+                  size="sm"
+                  className={cn(
+                    "rounded-none border-r border-gray-600 text-gray-300",
+                    !isAuthDataManual ? "bg-[#1e1e1e] text-white" : "bg-[#2d2d30] text-[#969696]"
+                  )}
+                >
+                  Load
+                </Button>
+              </div>
+            </div>
+            {isAuthDataManual ? (
+              <JsonEditor
+                value={authData}
+                onChange={setAuthData}
+                placeholder='{\n  "access_token": "your_token"\n}'
+                height="120px"
+              />
+            ) : (
+              <Select
+                value={selectedConnection?.id}
+                onValueChange={(e) =>
+                  setSelectedConnection(connections?.find((connection) => connection.id === e) || null)
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a connection" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#252526] border border-slate-700 text-gray-100">
+                  {connections?.map((connection) => (
+                    <SelectItem
+                      className="text-xs text-gray-300 bg-grey-500 border border-slate-700 hover:bg-gray-700 hover:text-white cursor-pointer"
+                      key={connection.id}
+                      value={connection.id}
+                    >
+                      {connection.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
-          <div className="flex-shrink-0">
-            <label className="text-xs text-gray-300 mb-1 block">Input Fields (JSON)</label>
-            <JsonEditor
-              value={actionData}
-              onChange={setActionData}
-              placeholder='{\n  "name": "John Doe",\n  "email": "john@example.com"\n}'
-              height="120px"
-            />
+          <div className="flex border-b border-[#1e1e1e] bg-[#2d2d30] flex-shrink-0 sticky top-0 z-10">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setTestTab(tab.id)}
+                className={`flex-1 px-2 py-2.5 border-none cursor-pointer text-xs ${
+                  testTab === tab.id
+                    ? "bg-[#1e1e1e] text-white border-b-2 border-b-[#0e639c]"
+                    : "bg-[#2d2d30] text-[#969696]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          <div className="flex-shrink-0">
-            <label className="text-xs text-gray-300 mb-1 block">Config Fields (JSON)</label>
-            <JsonEditor
-              value={configData}
-              onChange={setConfigData}
-              placeholder='{\n  "module": "Contact"\n}'
-              height="120px"
+          {testTab !== "config" && selectedAction && (
+            <InputFields
+              selectedAction={selectedAction}
+              hasConfigFields={availableActions?.[selectedAction]?.has_config_fields}
+              isInputDataManual={isInputDataManual}
+              setIsInputDataManual={setIsInputDataManual}
+              configData={configData}
+              setConfigData={setConfigData}
+              configFields={configFields}
+              inputData={inputData}
+              setInputData={setInputData}
+              isConfigFieldsLoading={isConfigFieldsLoading}
+              inputFields={inputFields}
+              isInputFieldsLoading={isInputFieldsLoading}
+              testTab={testTab}
             />
-          </div>
+          )}
 
           <Button
             onClick={handleTestAction}
             disabled={isLoading || !activeFile || !selectedAction}
-            className="w-full flex-shrink-0"
+            className="w-full flex-shrink-0 border rounded-sm"
             size="sm"
           >
-            {isLoading ? "Testing..." : "Test Action"}
+            {isLoading ? "Testing..." : `Test ${testTab}`}
           </Button>
 
           {testResult && (

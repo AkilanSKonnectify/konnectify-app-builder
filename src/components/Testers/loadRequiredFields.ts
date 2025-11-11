@@ -9,7 +9,7 @@ export async function loadConfigFields(
   ensureRunner: () => Promise<SandboxRunner>,
   append: any,
   timeout: number,
-  authData: any = {}
+  authData: any
 ) {
   if (!activeFile?.content || !event) return;
 
@@ -62,7 +62,7 @@ export async function loadInputFields(
   append: any,
   timeout: number,
   authData: any,
-  configData: any = {}
+  configData: any = "{}"
 ) {
   if (!activeFile?.content || !event) return;
 

@@ -41,10 +41,11 @@ export default function TriggerTester() {
   const [isConfigFieldsLoading, setIsConfigFieldsLoading] = useState(false);
   const [configFields, setConfigFields] = useState<Field[]>();
   const [testResult, setTestResult] = useState<any>(null);
-  const [testTab, setTestTab] = useState<"input" | "sample" | "poll" | "output">("poll");
 
-  const tabs: { id: "input" | "sample" | "poll" | "output"; label: string }[] = [
-    { id: "input", label: "Config fields" },
+  const [testTab, setTestTab] = useState<"config" | "sample" | "poll" | "output">("poll");
+
+  const tabs: { id: "config" | "sample" | "poll" | "output"; label: string }[] = [
+    { id: "config", label: "Config fields" },
     { id: "sample", label: "Sample data" },
     { id: "poll", label: "Poll data" },
     { id: "output", label: "Output Schema" },
@@ -84,8 +85,9 @@ export default function TriggerTester() {
       const triggerOptions = triggers?.value;
       if (triggerOptions && typeof triggerOptions === "object") {
         setAvailableTriggers(triggerOptions);
-        if (Object.keys(triggerOptions || {}).length > 0 && !selectedTrigger) {
-          setSelectedTrigger(Object.keys(triggerOptions)[0]);
+        const triggerNames = Object.keys(triggerOptions);
+        if (triggerNames.length > 0 && !selectedTrigger) {
+          setSelectedTrigger(triggerNames[0]);
         }
       }
     } catch (err) {
@@ -95,23 +97,22 @@ export default function TriggerTester() {
   }
 
   async function loadConfigAndInputFields() {
-    if (!selectedTrigger) return;
+    if (!selectedTrigger || !availableTriggers?.[selectedTrigger]?.has_config_fields) return;
+
     try {
-      if (availableTriggers?.[selectedTrigger]?.has_config_fields) {
-        append("info", ["Config Loading Config Fields...."]);
-        setIsConfigFieldsLoading(true);
-        const result = await loadConfigFields(
-          "triggers",
-          selectedTrigger,
-          activeFile,
-          ensureRunner,
-          append,
-          timeout,
-          authData
-        );
-        setConfigFields(result);
-        append("info", ["Config fields loaded"]);
-      }
+      append("info", ["Config Loading Config Fields...."]);
+      setIsConfigFieldsLoading(true);
+      const result = await loadConfigFields(
+        "triggers",
+        selectedTrigger,
+        activeFile,
+        ensureRunner,
+        append,
+        timeout,
+        authData
+      );
+      setConfigFields(result);
+      append("info", ["Config fields loaded"]);
     } catch (err) {
       append("error", [String(err)]);
     } finally {
@@ -132,7 +133,7 @@ export default function TriggerTester() {
 
     setIsLoading(true);
     setTestResult(null);
-    append("info", [`Starting trigger test for: ${availableTriggers?.[selectedTrigger].id}...`]);
+    append("info", [`Starting trigger test for: ${selectedTrigger}: ${testTab}...`]);
 
     try {
       await ensureEsbuildInitialized();
@@ -163,12 +164,12 @@ export default function TriggerTester() {
 
       // Run trigger poll function
       const result = await runner.run(
-        `triggers.${availableTriggers?.[selectedTrigger].id}.${
+        `triggers.${selectedTrigger}.${
           testTab === "poll"
             ? "poll"
             : testTab === "sample"
             ? "sample"
-            : `${testTab === "input" ? "config_fields" : "output_schema"}.fields`
+            : `${testTab === "config" ? "config_fields" : "output_schema"}.fields`
         }`,
         context,
         {
@@ -176,13 +177,13 @@ export default function TriggerTester() {
           timeoutMs: timeout * 1000,
           operationData: {
             appId: activeFile.name,
-            triggerKey: availableTriggers?.[selectedTrigger].id,
+            triggerKey: selectedTrigger,
           },
         }
       );
 
       setTestResult({ success: true, result });
-      append("info", [`Trigger ${availableTriggers?.[selectedTrigger].id} executed successfully:`, result]);
+      append("info", [`Trigger ${selectedTrigger}: ${testTab} executed successfully:`, result]);
     } catch (err: any) {
       setTestResult({ success: false, error: String(err) });
       append("error", [String(err)]);
@@ -233,10 +234,7 @@ export default function TriggerTester() {
           </div>
           <div className="text-xs text-gray-300 flex-shrink-0">
             <label className="mb-1 block">Select Trigger</label>
-            <Select
-              value={availableTriggers?.[selectedTrigger || ""]?.id}
-              onValueChange={(triggerId) => setSelectedTrigger(triggerId)}
-            >
+            <Select value={selectedTrigger} onValueChange={(triggerId) => setSelectedTrigger(triggerId)}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a trigger" />
               </SelectTrigger>
@@ -313,6 +311,16 @@ export default function TriggerTester() {
             )}
           </div>
 
+          <div className="flex-shrink-0">
+            <label className="text-xs text-gray-300 mb-1 block">Additional data (JSON)</label>
+            <JsonEditor
+              value={additionalTriggerData}
+              onChange={setAdditionalTriggerData}
+              placeholder='{\n  "since": "2024-01-01T00:00:00Z",\n  "till": "2024-12-31T23:59:59Z",\n  "cursor": null\n}'
+              height="120px"
+            />
+          </div>
+
           <div className="flex border-b border-[#1e1e1e] bg-[#2d2d30] flex-shrink-0 sticky top-0 z-10">
             {tabs.map((tab) => (
               <button
@@ -329,17 +337,7 @@ export default function TriggerTester() {
             ))}
           </div>
 
-          <div className="flex-shrink-0">
-            <label className="text-xs text-gray-300 mb-1 block">Additional data (JSON)</label>
-            <JsonEditor
-              value={additionalTriggerData}
-              onChange={setAdditionalTriggerData}
-              placeholder='{\n  "since": "2024-01-01T00:00:00Z",\n  "till": "2024-12-31T23:59:59Z",\n  "cursor": null\n}'
-              height="120px"
-            />
-          </div>
-
-          {testTab !== "input" && selectedTrigger && availableTriggers?.[selectedTrigger]?.has_config_fields && (
+          {testTab !== "config" && selectedTrigger && availableTriggers?.[selectedTrigger]?.has_config_fields && (
             <InputFields
               selectedTrigger={selectedTrigger}
               isConfigDataManual={isConfigDataManual}
