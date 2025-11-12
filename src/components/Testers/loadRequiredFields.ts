@@ -1,5 +1,6 @@
 import { ensureEsbuildInitialized } from "@/hooks/useEsbuild";
 import { SandboxRunner } from "@/lib/sandboxRunner";
+import { Field } from "@/types/konnectify-dsl";
 import { FileData } from "@/types/localStorage";
 
 export async function loadConfigFields(
@@ -39,13 +40,22 @@ export async function loadConfigFields(
     };
 
     // Run event config_fields.fields function
-    const result = await runner.run(`${eventType}.${event}.config_fields.fields`, context, {
+    const result: Field[] = await runner.run(`${eventType}.${event}.config_fields.fields`, context, {
       proxyFetch: true,
       timeoutMs: timeout * 1000,
       operationData: {
         appId: activeFile.name,
         operationKey: event,
       },
+    });
+
+    result.forEach((field) => {
+      if ("pick_list" in field) {
+        if (typeof field?.pick_list === "function") {
+          const pick_list = field.pick_list(context as any);
+          field.pick_list = pick_list as any;
+        }
+      }
     });
 
     return result;

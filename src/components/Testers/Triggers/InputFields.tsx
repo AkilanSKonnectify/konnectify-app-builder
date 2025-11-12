@@ -1,9 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { Field } from "@/types/konnectify-dsl";
+import { Field, PickListValue } from "@/types/konnectify-dsl";
 import { cn } from "@/utils/utils";
 import JsonEditor from "../JsonEditor";
+import { useEffect, useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown } from "lucide-react";
 
 interface InputFieldsProps {
   selectedTrigger: string | undefined;
@@ -24,6 +33,19 @@ const InputFields = ({
   configFields,
   isConfigFieldsLoading,
 }: InputFieldsProps) => {
+  const [parsedConfigData, setParsedConfigData] = useState<{ [key: string]: string }>(() => {
+    try {
+      return JSON.parse(configData);
+    } catch (err) {
+      console.warn("Unable to parse the JSON. Error: ", String(err));
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    setConfigData(JSON.stringify(parsedConfigData));
+  }, [parsedConfigData]);
+
   return (
     <div>
       <div className="flex-shrink-0">
@@ -69,16 +91,43 @@ const InputFields = ({
               <label key={field.name} className="text-xs text-gray-300 mb-1 block">
                 {field?.label || field.name}
               </label>
-              <Input
-                className="text-xs font-mono"
-                type={field.type}
-                name={field.name}
-                placeholder={`Enter ${field.name}`}
-                value={JSON.parse(configData)?.[field.name] || ""}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setConfigData((prev: string) => JSON.stringify({ ...JSON.parse(prev), [field.name]: e.target.value }))
-                }
-              />
+              <div className="rounded-md border file:border-0 flex items-center justify-center">
+                <Input
+                  className="text-xs font-mono border-none"
+                  type={field.type}
+                  name={field.name}
+                  placeholder={`Enter ${field.name}`}
+                  value={parsedConfigData?.[field.name] || ""}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setParsedConfigData((prev) => ({ ...prev, [field.name]: e.target.value }))
+                  }
+                />
+                {"pick_list" in field && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="w-1/6 border-l-gray-500">
+                      <ChevronDown className="h-4 opacity-50" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-[#252526] border border-slate-700 text-gray-100">
+                      {(field?.pick_list as any)?.map((option: PickListValue) => (
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem
+                            className="text-xs text-gray-300 bg-grey-500 border border-slate-700 hover:bg-gray-700 hover:text-white cursor-pointer"
+                            key={option.value}
+                            onSelect={() => {
+                              setParsedConfigData((prev) => ({
+                                ...prev,
+                                [field.name]: (parsedConfigData[field.name] || "") + option.value,
+                              }));
+                            }}
+                          >
+                            {option.label || option.value}
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
             </div>
           ))
         )}

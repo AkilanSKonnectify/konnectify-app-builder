@@ -261,15 +261,17 @@ export default function ActionTester() {
   }, [selectedAction, authData]);
 
   useEffect(() => {
-    const isAllConfigDataCovered = configFields?.every((field) => {
-      const parsedConfigData = JSON.parse(configData);
-      return field.name in parsedConfigData && parsedConfigData[field.name];
-    });
-    if (!isAllConfigDataCovered) {
-      setInputFields([]);
-      setInputData("{}");
-    } else {
-      loadInputFieldsWithConfigData();
+    if (configFields) {
+      const isAllConfigDataCovered = configFields?.every((field) => {
+        const parsedConfigData = JSON.parse(configData);
+        return field.name in parsedConfigData && parsedConfigData[field.name];
+      });
+      if (!isAllConfigDataCovered) {
+        setInputFields([]);
+        setInputData("{}");
+      } else {
+        loadInputFieldsWithConfigData();
+      }
     }
   }, [configData, configFields]);
 

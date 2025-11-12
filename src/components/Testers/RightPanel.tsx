@@ -5,7 +5,6 @@ import { ChevronRight, ChevronLeft } from "lucide-react";
 import RightPanelTabs from "./RightPanelTabs";
 
 const MIN_WIDTH = 200;
-const MAX_WIDTH = 800;
 const COLLAPSED_WIDTH = 40;
 const DEFAULT_WIDTH = 300;
 
@@ -30,7 +29,7 @@ export default function RightPanel() {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
       const delta = startX.current - e.clientX; // reversed because we're resizing from the left
-      const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth.current + delta));
+      const newWidth = Math.max(MIN_WIDTH, startWidth.current + delta);
       setWidth(newWidth);
     };
 
