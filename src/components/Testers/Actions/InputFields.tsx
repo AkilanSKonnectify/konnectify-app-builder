@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface InputFieldsProps {
   selectedAction: string | undefined;
@@ -77,7 +77,7 @@ const InputFields = ({
         <div className="flex justify-between items-center">
           <div className="flex items-center justify-center">
             <button onClick={() => setCollapseFields(!collapseFields)}>
-              {collapseFields ? <ChevronDown className="w-4 h-4 mr-2" /> : <ChevronUp className="w-4 h-4 mr-2" />}
+              {collapseFields ? <ChevronRight className="w-4 h-4 mr-2" /> : <ChevronDown className="w-4 h-4 mr-2" />}
             </button>
             <label className="text-md text-gray-300 mb-1 block">Input: </label>
           </div>
