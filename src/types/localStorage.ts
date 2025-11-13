@@ -2,6 +2,7 @@ export type Connection = {
   id: string;
   name: string;
   fields: { [connectionField: string]: string };
+  type?: "credentials" | "oauth2";
 };
 
 export interface FileData {
