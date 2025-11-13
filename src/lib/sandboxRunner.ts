@@ -73,7 +73,7 @@ export class SandboxRunner {
     const res = await esbuild.transform(tsCode, {
       loader: "ts",
       format: "cjs",
-      target: "es2019",
+      target: "es2022",
     });
 
     return `
