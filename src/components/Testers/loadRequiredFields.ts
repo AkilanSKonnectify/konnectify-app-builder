@@ -40,23 +40,28 @@ export async function loadConfigFields(
     };
 
     // Run event config_fields.fields function
-    const result: Field[] = await runner.run(`${eventType}.${event}.config_fields.fields`, context, {
-      proxyFetch: true,
-      timeoutMs: timeout * 1000,
-      operationData: {
-        appId: activeFile.name,
-        operationKey: event,
+    const result: Field[] = await runner.run(
+      `${eventType}.${event}.config_fields.fields`,
+      context,
+      {
+        proxyFetch: true,
+        timeoutMs: timeout * 1000,
+        operationData: {
+          appId: activeFile.name,
+          operationKey: event,
+        },
       },
-    });
+      true
+    );
 
-    result.forEach((field) => {
-      if ("pick_list" in field) {
-        if (typeof field?.pick_list === "function") {
-          const pick_list = field.pick_list(context as any);
-          field.pick_list = pick_list as any;
-        }
-      }
-    });
+    // result.forEach((field) => {
+    //   if ("pick_list" in field) {
+    //     if (typeof field?.pick_list === "function") {
+    //       const pick_list = await field.pick_list(context as any);
+    //       field.pick_list = pick_list as any;
+    //     }
+    //   }
+    // });
 
     return result;
   } catch (err) {

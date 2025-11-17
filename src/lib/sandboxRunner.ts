@@ -122,7 +122,8 @@ export class SandboxRunner {
       proxyFetch?: boolean;
       timeoutMs?: number;
       operationData?: any;
-    }
+    },
+    isFields: boolean = false
   ) {
     if (!this.worker) throw new Error("Worker not ready");
     const requestId = Math.random().toString(36).slice(2);
@@ -158,6 +159,7 @@ export class SandboxRunner {
       proxyFetch: !!options?.proxyFetch,
       operationData: options?.operationData || {},
       enableLogger: true,
+      isFields,
     });
 
     return p;

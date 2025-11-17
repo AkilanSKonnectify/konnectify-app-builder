@@ -210,6 +210,18 @@ export function createWorkerBlobUrl(): string {
                 };
               }
 
+              if (msg.isFields) {
+                // Special handling for fields functions to sanitize pick_lists
+                if (result && Array.isArray(result)) {
+                  for (let field of result) {
+                    if ("pick_list" in field && typeof field.pick_list === "function") {
+                      const pick_list = await field.pick_list(enhancedContext);
+                      field.pick_list = pick_list;
+                    }
+                  }
+                }
+              }
+
               const safeResult = sanitizeForPostMessage(result);
 
               self.postMessage({ type: 'result', requestId, result: safeResult });
