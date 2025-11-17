@@ -185,7 +185,8 @@ export default function TriggerTester() {
             appId: activeFile.name,
             triggerKey: selectedTrigger,
           },
-        }
+        },
+        testTab === "config"
       );
 
       setTestResult({ success: true, result });

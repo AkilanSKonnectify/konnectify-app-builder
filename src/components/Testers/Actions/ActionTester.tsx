@@ -226,7 +226,8 @@ export default function ActionTester() {
             appId: activeFile.name,
             operationKey: selectedAction,
           },
-        }
+        },
+        testTab === "config" || testTab === "input"
       );
 
       setTestResult({ success: true, result });
@@ -273,6 +274,7 @@ export default function ActionTester() {
         loadInputFieldsWithConfigData();
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configData, configFields]);
 
   return (
