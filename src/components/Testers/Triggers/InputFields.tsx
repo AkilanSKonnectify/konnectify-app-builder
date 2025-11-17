@@ -22,6 +22,7 @@ interface InputFieldsProps {
   setConfigData: (val: React.SetStateAction<string>) => void;
   configFields: Field[] | undefined;
   isConfigFieldsLoading: boolean;
+  triggerType: "poll" | "webhook" | undefined;
 }
 
 const InputFields = ({
@@ -32,6 +33,7 @@ const InputFields = ({
   setConfigData,
   configFields,
   isConfigFieldsLoading,
+  triggerType,
 }: InputFieldsProps) => {
   const [parsedConfigData, setParsedConfigData] = useState<{ [key: string]: string }>(() => {
     try {
@@ -49,8 +51,25 @@ const InputFields = ({
   return (
     <div>
       <div className="flex-shrink-0">
+        {triggerType === "webhook" && (
+          <div className="mb-5">
+            <label className="text-xs text-gray-300 mb-1 block">Webhook Endpoint:</label>
+            <div className="rounded-md border file:border-0 flex items-center justify-center">
+              <Input
+                className="text-xs font-mono border-none"
+                type="text"
+                name="webhookEndpoint"
+                placeholder={`Enter Webhook Endpoint`}
+                value={parsedConfigData?.["webhookEndpoint"] || ""}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setParsedConfigData((prev) => ({ ...prev, ["webhookEndpoint"]: e.target.value }))
+                }
+              />
+            </div>
+          </div>
+        )}
         <div className="flex justify-between items-center">
-          <label className="text-xs text-gray-300 mb-1 block">Input: </label>
+          <label className="text-md text-gray-300 mb-1 block">Input: </label>
           <div className="flex border-b border-[#1e1e1e] bg-[#2d2d30] rounded overflow-hidden text-gray-300">
             <Button
               onClick={() => setIsConfigDataManual(true)}
@@ -76,7 +95,7 @@ const InputFields = ({
         </div>
         {isConfigDataManual ? (
           <div className="mb-5">
-            <label className="text-xs text-gray-300 mb-1 block">Config Fields (JSON)</label>
+            <label className="text-sm text-gray-300 mb-1 block">Config Fields (JSON)</label>
             <JsonEditor value={configData} onChange={setConfigData} placeholder="{}" height="120px" />
           </div>
         ) : !selectedTrigger ? (
@@ -86,50 +105,53 @@ const InputFields = ({
         ) : !configFields ? (
           <p className="text-red-400 text-sm m-3"> Error loading config fields</p>
         ) : (
-          configFields?.map((field) => (
-            <div key={field.name} className="mb-5">
-              <label key={field.name} className="text-xs text-gray-300 mb-1 block">
-                {field?.label || field.name}
-              </label>
-              <div className="rounded-md border file:border-0 flex items-center justify-center">
-                <Input
-                  className="text-xs font-mono border-none"
-                  type={field.type}
-                  name={field.name}
-                  placeholder={`Enter ${field.name}`}
-                  value={parsedConfigData?.[field.name] || ""}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setParsedConfigData((prev) => ({ ...prev, [field.name]: e.target.value }))
-                  }
-                />
-                {"pick_list" in field && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="w-1/6 border-l-gray-500">
-                      <ChevronDown className="h-4 opacity-50" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-[#252526] border border-slate-700 text-gray-100">
-                      {(field?.pick_list as any)?.map((option: PickListValue) => (
-                        <DropdownMenuGroup>
-                          <DropdownMenuItem
-                            className="text-xs text-gray-300 bg-grey-500 border border-slate-700 hover:bg-gray-700 hover:text-white cursor-pointer"
-                            key={option.value}
-                            onSelect={() => {
-                              setParsedConfigData((prev) => ({
-                                ...prev,
-                                [field.name]: (parsedConfigData[field.name] || "") + option.value,
-                              }));
-                            }}
-                          >
-                            {option.label || option.value}
-                          </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
+          <>
+            <label className="text-sm text-gray-300 mb-2 block">Config Fields: </label>
+            {configFields?.map((field) => (
+              <div key={field.name} className="mb-5">
+                <label key={field.name} className="text-xs text-gray-300 mb-1 block">
+                  {field?.label || field.name}
+                </label>
+                <div className="rounded-md border file:border-0 flex items-center justify-center">
+                  <Input
+                    className="text-xs font-mono border-none"
+                    type={field.type}
+                    name={field.name}
+                    placeholder={`Enter ${field.name}`}
+                    value={parsedConfigData?.[field.name] || ""}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setParsedConfigData((prev) => ({ ...prev, [field.name]: e.target.value }))
+                    }
+                  />
+                  {"pick_list" in field && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="w-1/6 border-l-gray-500">
+                        <ChevronDown className="h-4 opacity-50" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-[#252526] border border-slate-700 text-gray-100">
+                        {(field?.pick_list as any)?.map((option: PickListValue) => (
+                          <DropdownMenuGroup>
+                            <DropdownMenuItem
+                              className="text-xs text-gray-300 bg-grey-500 border border-slate-700 hover:bg-gray-700 hover:text-white cursor-pointer"
+                              key={option.value}
+                              onSelect={() => {
+                                setParsedConfigData((prev) => ({
+                                  ...prev,
+                                  [field.name]: (parsedConfigData[field.name] || "") + option.value,
+                                }));
+                              }}
+                            >
+                              {option.label || option.value}
+                            </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </>
         )}
       </div>
     </div>

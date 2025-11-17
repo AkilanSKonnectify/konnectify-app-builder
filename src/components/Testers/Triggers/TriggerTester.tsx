@@ -37,6 +37,7 @@ export default function TriggerTester() {
   );
   const [configData, setConfigData] = useState("{}");
   const [selectedTrigger, setSelectedTrigger] = useState<string>();
+  const [triggerType, setTriggerType] = useState<"poll" | "webhook">();
   const [availableTriggers, setAvailableTriggers] = useState<Triggers>();
   const [isConfigFieldsLoading, setIsConfigFieldsLoading] = useState(false);
   const [configFields, setConfigFields] = useState<Field[]>();
@@ -91,6 +92,8 @@ export default function TriggerTester() {
         const triggerNames = Object.keys(triggerOptions);
         if (triggerNames.length > 0 && !selectedTrigger) {
           setSelectedTrigger(triggerNames[0]);
+          const typeOfTrigger = triggerOptions[triggerNames[0]]["type"] === "webhook" ? "webhook" : "poll";
+          setTriggerType(typeOfTrigger);
         }
       }
     } catch (err) {
@@ -237,7 +240,14 @@ export default function TriggerTester() {
           </div>
           <div className="text-xs text-gray-300 flex-shrink-0">
             <label className="mb-1 block">Select Trigger</label>
-            <Select value={selectedTrigger} onValueChange={(triggerId) => setSelectedTrigger(triggerId)}>
+            <Select
+              value={selectedTrigger}
+              onValueChange={(triggerId) => {
+                setSelectedTrigger(triggerId);
+                const typeOfTrigger = availableTriggers?.[triggerId]["type"] === "webhook" ? "webhook" : "poll";
+                setTriggerType(typeOfTrigger);
+              }}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a trigger" />
               </SelectTrigger>
@@ -349,6 +359,7 @@ export default function TriggerTester() {
               setConfigData={setConfigData}
               configFields={configFields}
               isConfigFieldsLoading={isConfigFieldsLoading}
+              triggerType={triggerType}
             />
           )}
 

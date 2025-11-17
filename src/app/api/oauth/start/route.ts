@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
       // Get redirect URI (use current origin + /api/oauth/redirect)
       const origin = request.headers.get("origin") || request.nextUrl.origin;
-      const redirectUri = `${origin}/api/oauth/redirect`;
+      const redirectUri = `${origin}/api/oauth/redirect/`;
 
       // Store session
       oauthSessions.set(state, {
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
           return credentials[key.trim()] ?? `{{${key}}}`; // keeps original if not found
         })
         .replace(/\{\{redirect_uri\}\}/g, encodeURIComponent(redirectUri));
-      console.log(credentials, authUrl);
+
       if (authUrl.includes("{{client_id}}"))
         return NextResponse.json({ error: "Client ID is required" }, { status: 400 });
 

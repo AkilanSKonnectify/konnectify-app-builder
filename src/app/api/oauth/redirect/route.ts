@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
               type: 'oauth-error',
               error: '${errorMsg}'
             }, '*');
-            setTimeout(() => window.close(), 3000);
+            setTimeout(() => window.close(), 60000);
           </script>
         </body>
       </html>
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
               type: 'oauth-error',
               error: 'Missing authorization code or state parameter'
             }, '*');
-            setTimeout(() => window.close(), 3000);
+            setTimeout(() => window.close(), 60000);
           </script>
         </body>
       </html>
@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
               type: 'oauth-error',
               error: 'Invalid or expired OAuth session'
             }, '*');
-            setTimeout(() => window.close(), 3000);
+            setTimeout(() => window.close(), 60000);
           </script>
         </body>
       </html>
@@ -188,12 +188,16 @@ export async function GET(request: NextRequest) {
         payload: {},
       };
 
+      console.log(context);
+
       // Call the connector's authorize method
       const tokens = await runner.run("connection.auth.authorize", context, {
         proxyFetch: true,
         timeoutMs: 30000,
         operationData: { appId: session.fileId },
       });
+
+      console.log("Oauth tokens: ", tokens);
 
       // Clean up session
       deleteOAuthSession(state);
@@ -253,6 +257,7 @@ export async function GET(request: NextRequest) {
     } catch (error: any) {
       runner.dispose();
       deleteOAuthSession(state);
+      console.log(error);
 
       return new NextResponse(
         `
@@ -294,7 +299,7 @@ export async function GET(request: NextRequest) {
                 type: 'oauth-error',
                 error: '${error.message || String(error)}'
               }, '*');
-              setTimeout(() => window.close(), 3000);
+              setTimeout(() => window.close(), 60000);
             </script>
           </body>
         </html>
@@ -346,7 +351,7 @@ export async function GET(request: NextRequest) {
               type: 'oauth-error',
               error: '${error.message || String(error)}'
             }, '*');
-            setTimeout(() => window.close(), 3000);
+            setTimeout(() => window.close(), 60000);
           </script>
         </body>
       </html>

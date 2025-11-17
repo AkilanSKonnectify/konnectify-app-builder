@@ -14,6 +14,12 @@ export function createWorkerBlobUrl(): string {
       };
       globalThis.console = baseConsole;
 
+      // Buffer for creating base64 etc
+      const baseBuffer = {
+        from: (...args) => self.postMessage({ type: 'console', level: 'info', args }),
+      };
+      globalThis.Buffer = baseBuffer;
+
       // Logger proxy for connector context
       function createLoggerProxy(name) {
         return {
