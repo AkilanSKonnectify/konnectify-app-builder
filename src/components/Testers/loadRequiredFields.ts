@@ -108,14 +108,19 @@ export async function loadInputFields(
     };
 
     // Run event input_schema.fields function
-    const result = await runner.run(`${eventType}.${event}.input_schema.fields`, context, {
-      proxyFetch: true,
-      timeoutMs: timeout * 1000,
-      operationData: {
-        appId: activeFile.name,
-        operationKey: event,
+    const result = await runner.run(
+      `${eventType}.${event}.input_schema.fields`,
+      context,
+      {
+        proxyFetch: true,
+        timeoutMs: timeout * 1000,
+        operationData: {
+          appId: activeFile.name,
+          operationKey: event,
+        },
       },
-    });
+      true
+    );
 
     return result;
   } catch (err) {
