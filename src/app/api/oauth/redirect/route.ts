@@ -181,6 +181,7 @@ export async function GET(request: NextRequest) {
       // Create context for authorize method
       const context = {
         auth: {
+          ...Object.fromEntries(searchParams.entries()),
           code,
           ...session.credentials,
           redirect_uri: session.redirectUri,
