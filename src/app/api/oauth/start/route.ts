@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
       // Get redirect URI (use current origin + /api/oauth/redirect)
       const origin = request.headers.get("origin") || request.nextUrl.origin;
-      const redirectUri = `${origin}/api/oauth/redirect/`;
+      const redirectUri = `${origin}/api/oauth/redirect`;
 
       // Store session
       oauthSessions.set(state, {
