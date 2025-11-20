@@ -137,7 +137,7 @@ export default function JsonViewer({ data, className, height = "100%" }: JsonVie
           options={{
             minimap: { enabled: false },
             fontSize: 12,
-            lineNumbers: "on",
+            lineNumbers: "off",
             lineNumbersMinChars: 2,
             automaticLayout: true,
             scrollBeyondLastLine: true,

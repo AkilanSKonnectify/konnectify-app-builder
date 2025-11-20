@@ -381,7 +381,7 @@ export default function ConnectionTester() {
           </Button>
 
           {testResult && (
-            <div className="flex-1 flex flex-col min-h-32">
+            <div className="flex flex-col min-h-38">
               <div className="flex items-center gap-2 mb-2 flex-shrink-0">
                 <Badge variant={testResult.success ? "default" : "destructive"}>
                   {testResult.success ? "Success" : "Failed"}
@@ -391,18 +391,10 @@ export default function ConnectionTester() {
                 <JsonViewer data={testResult.result || testResult.error} height="200px" />
               </div>
               {testResult?.success && (testResult?.result?.["validated"] || testResult?.tokens) && (
-                <div className="w-full mt-2 flex flex-col gap-3 p-3 flex-shrink-0">
-                  {/* <Input
-                    type="text"
-                    name="connectionName"
-                    placeholder="Enter connection name"
-                    value={connectionName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConnectionName(e?.target?.value)}
-                    maxLength={30}
-                  /> */}
+                <div className="w-full mt-2 gap-3 flex-shrink-0">
                   {!isConnectionSaved ? (
                     <Button
-                      className="border border-slate-700 rounded-lg"
+                      className="border border-slate-700 rounded-lg w-full"
                       onClick={saveConnection}
                       disabled={isConnectionSaved || !connectionName}
                       size="sm"
