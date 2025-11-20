@@ -341,6 +341,17 @@ export default function ConnectionTester() {
         </CardHeader>
         <CardContent className="flex flex-col flex-1 min-h-0 overflow-auto scrollbar-custom space-y-3 pr-1 mb-5">
           <div className="flex-shrink-0">
+            <div className="mb-5">
+              <label className="text-xs text-gray-300 mb-1 block">Connection Name</label>
+              <Input
+                type="text"
+                name="connectionName"
+                placeholder="Enter connection name"
+                value={connectionName}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConnectionName(e?.target?.value)}
+                maxLength={30}
+              />
+            </div>
             {authFields?.map((field) => (
               <div key={field.name} className="mb-5">
                 <label key={field.name} className="text-xs text-gray-300 mb-1 block">
@@ -381,14 +392,14 @@ export default function ConnectionTester() {
               </div>
               {testResult?.success && (testResult?.result?.["validated"] || testResult?.tokens) && (
                 <div className="w-full mt-2 flex flex-col gap-3 p-3 flex-shrink-0">
-                  <Input
+                  {/* <Input
                     type="text"
                     name="connectionName"
                     placeholder="Enter connection name"
                     value={connectionName}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConnectionName(e?.target?.value)}
                     maxLength={30}
-                  />
+                  /> */}
                   {!isConnectionSaved ? (
                     <Button
                       className="border border-slate-700 rounded-lg"
