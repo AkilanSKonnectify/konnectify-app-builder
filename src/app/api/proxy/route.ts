@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
         Referer: undefined,
       },
       body: options?.body,
+      ...options,
     };
 
     // Remove undefined headers

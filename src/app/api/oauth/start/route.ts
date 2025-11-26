@@ -2,24 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { ServerSandboxRunner } from "@/lib/serverSandboxRunner";
 
 // In-memory store for OAuth sessions (in production, use Redis or database)
-const oauthSessions = new Map<
-  string,
-  {
-    connectorCode: string;
-    credentials: any;
-    redirectUri: string;
-    fileId: string;
-    timestamp: number;
-  }
->();
+let oauthSessions: {
+  connectorCode: string;
+  credentials: any;
+  redirectUri: string;
+  fileId: string;
+  timestamp: number;
+  state: string;
+} | null = null;
 
 // Clean up old sessions (older than 1 hour)
 setInterval(() => {
   const oneHourAgo = Date.now() - 60 * 60 * 1000;
-  for (const [state, session] of (oauthSessions as any).entries()) {
-    if (session.timestamp < oneHourAgo) {
-      oauthSessions.delete(state);
-    }
+  if (oauthSessions?.timestamp && oauthSessions.timestamp < oneHourAgo) {
+    oauthSessions = null;
   }
 }, 5 * 60 * 1000); // Run every 5 minutes
 
@@ -29,7 +25,10 @@ export async function POST(request: NextRequest) {
     const { connectorCode, fileId, credentials } = body;
 
     if (!connectorCode || !fileId) {
-      return NextResponse.json({ error: "connectorCode and fileId are required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "connectorCode and fileId are required" },
+        { status: 400 }
+      );
     }
 
     // Load connector in sandbox to extract OAuth config
@@ -39,14 +38,21 @@ export async function POST(request: NextRequest) {
       await runner.loadConnector(connectorCode);
 
       // Get connection config
-      const connection = await runner.run("connection", {}, { timeoutMs: 5000 });
+      const connection = await runner.run(
+        "connection",
+        {},
+        { timeoutMs: 5000 }
+      );
       // Handle both direct return and wrapped return
       const connectionValue = connection?.value || connection;
       const authConfig = connectionValue?.auth;
 
       if (!authConfig || authConfig.type !== "oauth2") {
         runner.dispose();
-        return NextResponse.json({ error: "Connector does not use OAuth2 authentication" }, { status: 400 });
+        return NextResponse.json(
+          { error: "Connector does not use OAuth2 authentication" },
+          { status: 400 }
+        );
       }
 
       //   // Extract OAuth configuration
@@ -62,20 +68,23 @@ export async function POST(request: NextRequest) {
       //   }
 
       // Generate state for CSRF protection
-      const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const state =
+        Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15);
 
       // Get redirect URI (use current origin + /api/oauth/redirect)
       const origin = request.headers.get("origin") || request.nextUrl.origin;
       const redirectUri = `${origin}/api/oauth/redirect`;
 
       // Store session
-      oauthSessions.set(state, {
+      oauthSessions = {
         connectorCode,
         redirectUri,
         fileId,
         timestamp: Date.now(),
+        state,
         credentials,
-      });
+      };
 
       // Build authorization URL
       let authUrl = authorizationUrl
@@ -85,7 +94,10 @@ export async function POST(request: NextRequest) {
         .replace(/\{\{redirect_uri\}\}/g, encodeURIComponent(redirectUri));
 
       if (authUrl.includes("{{client_id}}"))
-        return NextResponse.json({ error: "Client ID is required" }, { status: 400 });
+        return NextResponse.json(
+          { error: "Client ID is required" },
+          { status: 400 }
+        );
 
       // Add state parameter if not already present
       if (!authUrl.includes("state=")) {
@@ -101,18 +113,24 @@ export async function POST(request: NextRequest) {
       });
     } catch (error: any) {
       runner.dispose();
-      return NextResponse.json({ error: `Failed to process connector: ${error.message}` }, { status: 500 });
+      return NextResponse.json(
+        { error: `Failed to process connector: ${error.message}` },
+        { status: 500 }
+      );
     }
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to start OAuth flow" }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Failed to start OAuth flow" },
+      { status: 500 }
+    );
   }
 }
 
 // Export function to get session (for redirect handler)
-export function getOAuthSession(state: string) {
-  return oauthSessions.get(state);
+export function getOAuthSession() {
+  return oauthSessions;
 }
 
-export function deleteOAuthSession(state: string) {
-  oauthSessions.delete(state);
+export function deleteOAuthSession() {
+  oauthSessions = null;
 }

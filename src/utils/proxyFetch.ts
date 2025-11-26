@@ -47,13 +47,7 @@ export async function proxyFetch(url: string, options: RequestInit = {}): Promis
       },
       body: JSON.stringify({
         url,
-        options: {
-          method: options.method || "GET",
-          headers: options.headers,
-          body: options.body,
-          mode: options.mode,
-          credentials: options.credentials,
-        },
+        options,
       }),
     });
 
