@@ -133,15 +133,15 @@ const InputFields = ({
                           <DropdownMenuGroup>
                             <DropdownMenuItem
                               className="text-xs text-gray-300 bg-grey-500 border border-slate-700 hover:bg-gray-700 hover:text-white cursor-pointer"
-                              key={option.value}
+                              key={option?.value}
                               onSelect={() => {
                                 setParsedConfigData((prev) => ({
                                   ...prev,
-                                  [field.name]: (parsedConfigData[field.name] || "") + option.value,
+                                  [field.name]: (parsedConfigData[field.name] || "") + option?.value,
                                 }));
                               }}
                             >
-                              {option.label || option.value}
+                              {option?.label || option?.value}
                             </DropdownMenuItem>
                           </DropdownMenuGroup>
                         ))}
