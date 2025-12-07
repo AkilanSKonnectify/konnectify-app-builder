@@ -29,6 +29,7 @@ export default function TopMenu() {
   });
   const [deploymentEnv, setDeploymentEnv] = useState<"PreStaging" | "Staging" | "Production">("PreStaging");
   const [loading, setLoading] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0);
 
   const { toast } = useToast();
 
@@ -44,12 +45,6 @@ export default function TopMenu() {
       typeof deployFields.hasTriggers == "boolean"
     );
   }, [deployFields]);
-
-  const DEPLOY_ENV_MAP = {
-    PreStaging: "https://container.prestaging.us.konnectify.dev",
-    Staging: "https://container.staging.us.konnectify.dev",
-    Production: "https://container.us.konnectifyapp.co",
-  };
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -80,19 +75,70 @@ export default function TopMenu() {
     if (!isCreateFormValid) return;
     try {
       setLoading(true);
-      const envUrl = DEPLOY_ENV_MAP[deploymentEnv];
-      const resp = await fetch(`${envUrl}/ui/apps/${deployFields.appId}/publish-app`, {
+      setElapsedTime(0);
+
+      // Start elapsed time counter
+      const startTime = Date.now();
+      const intervalId = setInterval(() => {
+        setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+      }, 1000);
+
+      const resp = await fetch("/api/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(deployFields),
+        body: JSON.stringify({
+          deploymentEnv,
+          deployFields,
+        }),
       });
-      if (!resp.ok) throw new Error(await resp.text());
-      toast({ title: "Success", description: "Successfully published app!" });
+
+      clearInterval(intervalId);
+      const totalTime = Math.floor((Date.now() - startTime) / 1000);
+
+      if (!resp.ok) {
+        let errorMessage = `HTTP ${resp.status}: ${resp.statusText}`;
+        try {
+          const errorData = await resp.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // If JSON parsing fails, try to get text
+          try {
+            const errorText = await resp.text();
+            errorMessage = errorText || errorMessage;
+          } catch {
+            // Use default error message
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await resp.json();
+      toast({
+        title: "Success",
+        description: `Successfully published app! (took ${totalTime}s)`,
+      });
       setIsDeployModalOpen(false);
     } catch (err: any) {
-      toast({ title: "Publish failed", description: err?.message ?? String(err), variant: "destructive" });
+      const errorMessage = err?.message ?? String(err);
+      // Check if it's a timeout error
+      if (errorMessage.includes("timeout") || errorMessage.includes("504")) {
+        toast({
+          title: "Publish timeout",
+          description:
+            "The publish operation is taking longer than expected. The deployment may still be in progress. Please check the deployment status manually.",
+          variant: "destructive",
+          duration: 10000, // Show for 10 seconds
+        });
+      } else {
+        toast({
+          title: "Publish failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
+      setElapsedTime(0);
     }
   };
 
@@ -265,7 +311,7 @@ export default function TopMenu() {
             {loading ? (
               <div className="flex items-center gap-2">
                 <Spinner size="sm" />
-                <span>Publishing...</span>
+                <span>Publishing... {elapsedTime > 0 && `(${elapsedTime}s)`}</span>
               </div>
             ) : (
               "Publish"
