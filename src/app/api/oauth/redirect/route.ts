@@ -63,61 +63,61 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Validate state and code
-  if (!state || !code) {
-    return new NextResponse(
-      `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>OAuth Error</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              height: 100vh;
-              margin: 0;
-              background: #1e1e1e;
-              color: #fff;
-            }
-            .container {
-              text-align: center;
-              padding: 20px;
-            }
-            .error {
-              color: #ff6b6b;
-              margin-bottom: 20px;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="error">
-              <h2>OAuth Error</h2>
-              <p>Missing authorization code or state parameter</p>
-            </div>
-            <p>You can close this window.</p>
-          </div>
-          <script>
-            window.opener?.postMessage({
-              type: 'oauth-error',
-              error: 'Missing authorization code or state parameter'
-            }, '*');
-            setTimeout(() => window.close(), 60000);
-          </script>
-        </body>
-      </html>
-      `,
-      {
-        headers: { "Content-Type": "text/html" },
-      }
-    );
-  }
-
+//   // Validate state and code
+//   if (!state || !code) {
+//     return new NextResponse(
+//       `
+//       <!DOCTYPE html>
+//       <html>
+//         <head>
+//           <title>OAuth Error</title>
+//           <style>
+//             body {
+//               font-family: Arial, sans-serif;
+//               display: flex;
+//               justify-content: center;
+//               align-items: center;
+//               height: 100vh;
+//               margin: 0;
+//               background: #1e1e1e;
+//               color: #fff;
+//             }
+//             .container {
+//               text-align: center;
+//               padding: 20px;
+//             }
+//             .error {
+//               color: #ff6b6b;
+//               margin-bottom: 20px;
+//             }
+//           </style>
+//         </head>
+//         <body>
+//           <div class="container">
+//             <div class="error">
+//               <h2>OAuth Error</h2>
+//               <p>Missing authorization code or state parameter</p>
+//             </div>
+//             <p>You can close this window.</p>
+//           </div>
+//           <script>
+//             window.opener?.postMessage({
+//               type: 'oauth-error',
+//               error: 'Missing authorization code or state parameter'
+//             }, '*');
+//             setTimeout(() => window.close(), 60000);
+//           </script>
+//         </body>
+//       </html>
+//       `,
+//       {
+//         headers: { "Content-Type": "text/html" },
+//       }
+//     );
+//   }
+// ``
   // Get session
-  const session = getOAuthSession(state);
+  const session = getOAuthSession();
   if (!session) {
     return new NextResponse(
       `
@@ -188,8 +188,9 @@ export async function GET(request: NextRequest) {
         },
         payload: {},
       };
-
-      console.log(context);
+      
+      console.log("Redirect uri's response: ",{...Object.fromEntries(searchParams.entries())})
+      console.log("Response over")
 
       // Call the connector's authorize method
       const tokens = await runner.run("connection.auth.authorize", context, {
@@ -198,10 +199,8 @@ export async function GET(request: NextRequest) {
         operationData: { appId: session.fileId },
       });
 
-      console.log("Oauth tokens: ", tokens);
-
       // Clean up session
-      deleteOAuthSession(state);
+      deleteOAuthSession();
 
       runner.dispose();
 
@@ -257,7 +256,7 @@ export async function GET(request: NextRequest) {
       );
     } catch (error: any) {
       runner.dispose();
-      deleteOAuthSession(state);
+      deleteOAuthSession();
       console.log(error);
 
       return new NextResponse(
@@ -311,7 +310,7 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    deleteOAuthSession(state);
+    deleteOAuthSession();
     return new NextResponse(
       `
       <!DOCTYPE html>
