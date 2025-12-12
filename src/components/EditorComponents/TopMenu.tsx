@@ -8,12 +8,25 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Spinner } from "@/components/ui/spinner";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { SandboxRunner } from "@/lib/sandboxRunner";
+import { useLogs } from "@/context/LogContext";
+import { ensureEsbuildInitialized } from "@/hooks/useEsbuild";
 
 export default function TopMenu() {
   const { createNewFile, uploadFile, files, activeFileId } = useEditor();
   const activeFile = files.find((f) => f.id === activeFileId);
+  const runnerRef = useRef<SandboxRunner | null>(null);
+  const [app, setApp] = useState<any>();
+
+  const { append } = useLogs();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -27,7 +40,10 @@ export default function TopMenu() {
     appCode: "",
     commitMessage: "Working model",
   });
-  const [deploymentEnv, setDeploymentEnv] = useState<"PreStaging" | "Staging" | "Production">("PreStaging");
+  const [hasDeployed, setHasDeployed] = useState(false);
+  const [deploymentEnv, setDeploymentEnv] = useState<
+    "PreStaging" | "Staging" | "Production"
+  >("PreStaging");
   const [loading, setLoading] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
 
@@ -58,22 +74,55 @@ export default function TopMenu() {
     }));
   };
 
+  async function ensureRunner() {
+    if (!runnerRef.current) {
+      runnerRef.current = new SandboxRunner();
+      await runnerRef.current.init();
+    }
+    return runnerRef.current!;
+  }
+
+  async function loadApp() {
+    if (!activeFile?.content) return;
+
+    try {
+      await ensureEsbuildInitialized();
+      const runner = await ensureRunner();
+      await runner.loadConnector(activeFile.content);
+
+      // Try to get actions from the connector
+      const defaultApp = await runner.run("app", {}, { timeoutMs: 5000 });
+      setApp(defaultApp?.value);
+    } catch (err) {
+      append("warn", ["Could not load actions:", String(err)]);
+    }
+  }
+
+  useEffect(() => {
+    loadApp();
+  }, [activeFile]);
+
   useEffect(() => {
     const code = activeFile?.content;
     const appId = activeFile?.name?.split(".")?.slice(0, -1)?.join(".");
     const appVersion = appId?.split("-")?.at(-1);
+    console.log(app);
     setDeployFields((prev) => ({
       ...prev,
-      appId: appId || deployFields.appId,
-      appName: appId?.split("-")?.at(0) || deployFields.appName,
-      appVersion: appVersion || deployFields.appVersion,
+      appId: app?.["id"] || appId || deployFields.appId,
+      appVersion: app?.["version"] || appVersion || deployFields.appVersion,
+      appName:
+        app?.["name"] || appId?.split("-")?.at(0) || deployFields.appName,
+      hasTriggers: app?.["has_triggers"] || deployFields.hasTriggers,
+      hasActions: app?.["has_actions"] || deployFields.hasActions,
       appCode: String(code || ""),
     }));
-  }, [activeFile]);
+  }, [app]);
 
   const handlePublishApp = async () => {
     if (!isCreateFormValid) return;
     try {
+      setHasDeployed(false);
       setLoading(true);
       setElapsedTime(0);
 
@@ -117,7 +166,8 @@ export default function TopMenu() {
         title: "Success",
         description: `Successfully published app! (took ${totalTime}s)`,
       });
-      setIsDeployModalOpen(false);
+      // setIsDeployModalOpen(false);
+      setHasDeployed(true);
     } catch (err: any) {
       const errorMessage = err?.message ?? String(err);
       // Check if it's a timeout error
@@ -158,8 +208,7 @@ export default function TopMenu() {
         <button
           onClick={createNewFile}
           title="New File (Ctrl+N)"
-          className="px-2 py-1.5 bg-transparent text-[#cccccc] border-none cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]"
-        >
+          className="px-2 py-1.5 bg-transparent text-[#cccccc] border-none cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]">
           <FilePlus size={16} />
           <span>New File</span>
         </button>
@@ -167,8 +216,7 @@ export default function TopMenu() {
         <button
           onClick={handleUploadClick}
           title="Open File (Ctrl+O)"
-          className="px-2 py-1.5 bg-transparent text-[#cccccc] border-none cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]"
-        >
+          className="px-2 py-1.5 bg-transparent text-[#cccccc] border-none cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]">
           <Upload size={16} />
           <span>Open File</span>
         </button>
@@ -185,8 +233,7 @@ export default function TopMenu() {
         <button
           onClick={() => setIsDeployModalOpen(true)}
           title="New File (Ctrl+N)"
-          className="m-1 px-1.5 py-1 bg-transparent text-[#cccccc] border rounded-full border-[#cccccc] cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]"
-        >
+          className="m-1 px-1.5 py-1 bg-transparent text-[#cccccc] border rounded-full border-[#cccccc] cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]">
           <Github size={16} />
           <span>Publish</span>
         </button>
@@ -194,9 +241,10 @@ export default function TopMenu() {
       <Modal
         isOpen={isDeployModalOpen}
         onClose={() => setIsDeployModalOpen(false)}
-        className="max-w-[800px] p-5 lg:p-10"
-      >
-        <h4 className="font-semibold text-white mb-7 text-title-sm">Publish App</h4>
+        className="max-w-[800px] p-5 lg:p-10">
+        <h4 className="font-semibold text-white mb-7 text-title-sm">
+          Publish App
+        </h4>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-white mb-1.5">
@@ -204,19 +252,28 @@ export default function TopMenu() {
             </label>
             <Select
               value={deploymentEnv}
-              onValueChange={(value) => setDeploymentEnv(value as "PreStaging" | "Staging" | "Production")}
-            >
+              onValueChange={(value) =>
+                setDeploymentEnv(
+                  value as "PreStaging" | "Staging" | "Production",
+                )
+              }>
               <SelectTrigger className="w-full bg-gray-800 text-white border-gray-600">
                 <SelectValue className="text-white" />
               </SelectTrigger>
               <SelectContent className="z-[2147483648] bg-gray-800 border-gray-600">
-                <SelectItem value="PreStaging" className="text-white hover:bg-gray-700">
-                  PreStaging
+                <SelectItem
+                  value="PreStaging"
+                  className="text-white hover:bg-gray-700">
+                  Pre staging
                 </SelectItem>
-                <SelectItem value="Staging" className="text-white hover:bg-gray-700">
+                <SelectItem
+                  value="Staging"
+                  className="text-white hover:bg-gray-700">
                   Staging
                 </SelectItem>
-                <SelectItem value="Production" className="text-white hover:bg-gray-700">
+                <SelectItem
+                  value="Production"
+                  className="text-white hover:bg-gray-700">
                   Production
                 </SelectItem>
               </SelectContent>
@@ -292,7 +349,9 @@ export default function TopMenu() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-white mb-1.5">Commit message</label>
+            <label className="block text-sm font-medium text-white mb-1.5">
+              Commit message
+            </label>
             <Input
               type="text"
               name="commitMessage"
@@ -303,21 +362,38 @@ export default function TopMenu() {
             />
           </div>
         </div>
-        <div className="flex items-center justify-end w-full gap-3 mt-8">
-          <Button size="sm" variant="outline" onClick={() => setIsDeployModalOpen(false)}>
-            Cancel
-          </Button>
-          <Button size="sm" variant="outline" onClick={handlePublishApp} disabled={loading || !isCreateFormValid}>
-            {loading ? (
-              <div className="flex items-center gap-2">
-                <Spinner size="sm" />
-                <span>Publishing... {elapsedTime > 0 && `(${elapsedTime}s)`}</span>
-              </div>
-            ) : (
-              "Publish"
-            )}
-          </Button>
-        </div>
+        {hasDeployed || loading ? (
+          <div className="flex items-center justify-end w-full gap-3 mt-8">
+            <Button size="sm" variant="outline">
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <Spinner size="sm" />
+                  <span>
+                    Publishing... {elapsedTime > 0 && `(${elapsedTime}s)`}
+                  </span>
+                </div>
+              ) : (
+                "Published!!"
+              )}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-end w-full gap-3 mt-8">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsDeployModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handlePublishApp}
+              disabled={loading || !isCreateFormValid || hasDeployed}>
+              Publish
+            </Button>
+          </div>
+        )}
       </Modal>
     </div>
   );

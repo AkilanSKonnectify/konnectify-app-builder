@@ -1,7 +1,19 @@
 "use client";
 
-import { Connection, EditorContextType, EditorState, FileData } from "@/types/localStorage";
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import {
+  Connection,
+  EditorContextType,
+  EditorState,
+  FileData,
+} from "@/types/localStorage";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+  useCallback,
+} from "react";
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
@@ -40,9 +52,11 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
   const [openTabs, setOpenTabs] = useState<string[]>([]);
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const isMac = navigator.platform.toUpperCase().includes("MAC");
+  const [isMac, setIsMac] = useState<boolean>(false);
 
   useEffect(() => {
+    const platform = navigator !== undefined ? navigator.platform : undefined;
+    if (platform) setIsMac(platform?.toUpperCase().includes("MAC"));
     const savedState = localStorage.getItem(STORAGE_KEY);
     if (savedState) {
       try {
@@ -97,34 +111,42 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
           return { ...f, name: newName, language };
         }
         return f;
-      })
+      }),
     );
   }, []);
 
-  const addConnectionsToFile = useCallback((id: string, connection: Connection) => {
-    setFiles((prev) =>
-      prev.map((f) => {
-        if (f.id === id) {
-          connection.id = `connection-${Date.now()}-${Math.random()}`;
-          const connections = [...f.connections, connection];
-          return { ...f, connections: connections };
-        }
-        return f;
-      })
-    );
-  }, []);
+  const addConnectionsToFile = useCallback(
+    (id: string, connection: Connection) => {
+      setFiles((prev) =>
+        prev.map((f) => {
+          if (f.id === id) {
+            connection.id = `connection-${Date.now()}-${Math.random()}`;
+            const connections = [...f.connections, connection];
+            return { ...f, connections: connections };
+          }
+          return f;
+        }),
+      );
+    },
+    [],
+  );
 
-  const removeConnectionsToFile = useCallback((id: string, connectionId: string) => {
-    setFiles((prev) =>
-      prev.map((f) => {
-        if (f.id === id) {
-          const connections = f.connections.filter((connection) => connection.id !== connectionId);
-          return { ...f, connections: connections };
-        }
-        return f;
-      })
-    );
-  }, []);
+  const removeConnectionsToFile = useCallback(
+    (id: string, connectionId: string) => {
+      setFiles((prev) =>
+        prev.map((f) => {
+          if (f.id === id) {
+            const connections = f.connections.filter(
+              (connection) => connection.id !== connectionId,
+            );
+            return { ...f, connections: connections };
+          }
+          return f;
+        }),
+      );
+    },
+    [],
+  );
 
   const openFile = useCallback((id: string) => {
     setOpenTabs((prev) => {
@@ -143,12 +165,14 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
       setOpenTabs((prev) => {
         const newTabs = prev.filter((tabId) => tabId !== id);
         if (activeFileId === id) {
-          setActiveFileId(newTabs.length > 0 ? newTabs[newTabs.length - 1] : null);
+          setActiveFileId(
+            newTabs.length > 0 ? newTabs[newTabs.length - 1] : null,
+          );
         }
         return newTabs;
       });
     },
-    [activeFileId]
+    [activeFileId],
   );
 
   const setActiveFileHandler = useCallback((id: string) => {
@@ -190,7 +214,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         console.error("Failed to upload file:", error);
       }
     },
-    [addFile]
+    [addFile],
   );
 
   useEffect(() => {
@@ -243,8 +267,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         uploadFile,
         addConnectionsToFile,
         removeConnectionsToFile,
-      }}
-    >
+      }}>
       {children}
     </EditorContext.Provider>
   );
