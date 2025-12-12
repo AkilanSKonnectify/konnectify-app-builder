@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Configure route timeout to 6 minutes (360 seconds)
 // This allows the route to handle long-running publish operations
-export const maxDuration = 6000; // 10 minutes in seconds
+export const maxDuration = 300; // 5 mins in seconds. Vercel limit for hobby plan is between 1 and 300
 
 const DEPLOY_ENV_MAP = {
   PreStaging: "https://container.prestaging.us.konnectify.dev",
@@ -21,20 +21,37 @@ export async function POST(request: NextRequest) {
     };
 
     if (!deploymentEnv || !(deploymentEnv in DEPLOY_ENV_MAP)) {
-      return NextResponse.json({ error: "Invalid deployment environment" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid deployment environment" },
+        { status: 400 },
+      );
     }
 
     if (!deployFields || typeof deployFields !== "object") {
-      return NextResponse.json({ error: "Missing deploy fields" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing deploy fields" },
+        { status: 400 },
+      );
     }
 
-    const requiredFields = ["appId", "appVersion", "appName", "appCode", "commitMessage"];
+    const requiredFields = [
+      "appId",
+      "appVersion",
+      "appName",
+      "appCode",
+      "commitMessage",
+    ];
     const hasAllFields = requiredFields.every(
-      (field) => typeof deployFields[field] === "string" && deployFields[field].trim() !== ""
+      (field) =>
+        typeof deployFields[field] === "string" &&
+        deployFields[field].trim() !== "",
     );
 
     if (!hasAllFields) {
-      return NextResponse.json({ error: "Missing required deploy field values" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required deploy field values" },
+        { status: 400 },
+      );
     }
 
     const envUrl = DEPLOY_ENV_MAP[deploymentEnv];
@@ -70,16 +87,21 @@ export async function POST(request: NextRequest) {
         const errorMessage =
           typeof parsedResponse === "string"
             ? parsedResponse || "Publish request failed"
-            : parsedResponse?.error || parsedResponse?.message || "Publish request failed";
+            : parsedResponse?.error ||
+              parsedResponse?.message ||
+              "Publish request failed";
 
-        return NextResponse.json({ error: errorMessage }, { status: upstreamResponse.status });
+        return NextResponse.json(
+          { error: errorMessage },
+          { status: upstreamResponse.status },
+        );
       }
 
       return NextResponse.json(
         {
           data: parsedResponse,
         },
-        { status: upstreamResponse.status }
+        { status: upstreamResponse.status },
       );
     } catch (fetchError: any) {
       clearTimeout(timeoutId);
@@ -91,7 +113,7 @@ export async function POST(request: NextRequest) {
             error:
               "Request timeout: The publish operation is taking longer than expected. Please check the deployment status manually.",
           },
-          { status: 504 }
+          { status: 504 },
         );
       }
 
@@ -99,8 +121,10 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown server error" },
-      { status: 500 }
+      {
+        error: error instanceof Error ? error.message : "Unknown server error",
+      },
+      { status: 500 },
     );
   }
 }
