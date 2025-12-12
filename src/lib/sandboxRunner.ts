@@ -123,7 +123,7 @@ export class SandboxRunner {
       timeoutMs?: number;
       operationData?: any;
     },
-    isFields: boolean = false,
+    isFields: boolean = false
   ) {
     if (!this.worker) throw new Error("Worker not ready");
     const requestId = Math.random().toString(36).slice(2);

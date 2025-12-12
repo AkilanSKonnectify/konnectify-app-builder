@@ -174,32 +174,6 @@ export function createWorkerBlobUrl(): string {
             self.postMessage({ type: 'loaded' });
           } else if (msg.type === 'run') {
             const { methodPath, context = {}, requestId, proxyFetch, operationData = {} } = msg;
-
-            if (methodPath === "app" || methodPath === "") {
-              const app = globalThis.__connector;
-              const appDetails = {
-                id: app?.["id"],
-                appType: app?.["appType"],
-                category: app?.["category"],
-                tags: app?.["tags"],
-                visibility: app?.["visibility"],
-                name: app?.["name"],
-                description: app?.["description"],
-                version: app?.["version"],
-                secure_tunnel: app?.["secure_tunnel"],
-                has_custom_action: app?.["has_custom_action"],
-                has_triggers: app?.["has_triggers"],
-                has_actions: app?.["has_actions"]
-              }
-              const result = {
-                value: appDetails,
-                type: typeof appDetails,
-                note: "Returned app details"
-              };
-              const safeResult = sanitizeForPostMessage(result);
-              self.postMessage({ type: 'result', requestId, result: safeResult });
-              return;
-            }
             
             // Create enhanced context
             const enhancedContext = createContext(context.auth, context.payload, operationData);
