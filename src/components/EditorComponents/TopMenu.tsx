@@ -38,7 +38,7 @@ export default function TopMenu() {
     hasTriggers: false,
     hasActions: false,
     appCode: "",
-    commitMessage: "Working model",
+    commitMessage: "",
   });
   const [hasDeployed, setHasDeployed] = useState(false);
   const [deploymentEnv, setDeploymentEnv] = useState<
@@ -208,7 +208,8 @@ export default function TopMenu() {
         <button
           onClick={createNewFile}
           title="New File (Ctrl+N)"
-          className="px-2 py-1.5 bg-transparent text-[#cccccc] border-none cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]">
+          className="px-2 py-1.5 bg-transparent text-[#cccccc] border-none cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]"
+        >
           <FilePlus size={16} />
           <span>New File</span>
         </button>
@@ -216,7 +217,8 @@ export default function TopMenu() {
         <button
           onClick={handleUploadClick}
           title="Open File (Ctrl+O)"
-          className="px-2 py-1.5 bg-transparent text-[#cccccc] border-none cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]">
+          className="px-2 py-1.5 bg-transparent text-[#cccccc] border-none cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]"
+        >
           <Upload size={16} />
           <span>Open File</span>
         </button>
@@ -233,7 +235,8 @@ export default function TopMenu() {
         <button
           onClick={() => setIsDeployModalOpen(true)}
           title="New File (Ctrl+N)"
-          className="m-1 px-1.5 py-1 bg-transparent text-[#cccccc] border rounded-full border-[#cccccc] cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]">
+          className="m-1 px-1.5 py-1 bg-transparent text-[#cccccc] border rounded-full border-[#cccccc] cursor-pointer flex items-center gap-1.5 text-[13px] transition-colors hover:bg-[#3e3e42]"
+        >
           <Github size={16} />
           <span>Publish</span>
         </button>
@@ -241,7 +244,8 @@ export default function TopMenu() {
       <Modal
         isOpen={isDeployModalOpen}
         onClose={() => setIsDeployModalOpen(false)}
-        className="max-w-[800px] p-5 lg:p-10">
+        className="max-w-[800px] p-5 lg:p-10"
+      >
         <h4 className="font-semibold text-white mb-7 text-title-sm">
           Publish App
         </h4>
@@ -256,24 +260,28 @@ export default function TopMenu() {
                 setDeploymentEnv(
                   value as "PreStaging" | "Staging" | "Production",
                 )
-              }>
+              }
+            >
               <SelectTrigger className="w-full bg-gray-800 text-white border-gray-600">
                 <SelectValue className="text-white" />
               </SelectTrigger>
               <SelectContent className="z-[2147483648] bg-gray-800 border-gray-600">
                 <SelectItem
                   value="PreStaging"
-                  className="text-white hover:bg-gray-700">
+                  className="text-white hover:bg-gray-700"
+                >
                   Pre staging
                 </SelectItem>
                 <SelectItem
                   value="Staging"
-                  className="text-white hover:bg-gray-700">
+                  className="text-white hover:bg-gray-700"
+                >
                   Staging
                 </SelectItem>
                 <SelectItem
                   value="Production"
-                  className="text-white hover:bg-gray-700">
+                  className="text-white hover:bg-gray-700"
+                >
                   Production
                 </SelectItem>
               </SelectContent>
@@ -358,7 +366,6 @@ export default function TopMenu() {
               placeholder="Enter commint message"
               value={deployFields.commitMessage}
               onChange={handleInputChange}
-              maxLength={30}
             />
           </div>
         </div>
@@ -382,14 +389,16 @@ export default function TopMenu() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setIsDeployModalOpen(false)}>
+              onClick={() => setIsDeployModalOpen(false)}
+            >
               Cancel
             </Button>
             <Button
               size="sm"
               variant="outline"
               onClick={handlePublishApp}
-              disabled={loading || !isCreateFormValid || hasDeployed}>
+              disabled={loading || !isCreateFormValid || hasDeployed}
+            >
               Publish
             </Button>
           </div>
