@@ -4,7 +4,13 @@ import { useLogs } from "@/context/LogContext";
 import { ensureEsbuildInitialized, useEsbuild } from "@/hooks/useEsbuild";
 import { useEditor } from "@/context/EditorContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ConnectionField } from "@/types/konnectify-dsl";
@@ -23,7 +29,9 @@ export default function ConnectionTester() {
   const [testResult, setTestResult] = useState<any>(null);
   const [connectionName, setConnectionName] = useState<string>("");
   const [isConnectionSaved, setIsConnectionSaved] = useState<boolean>(false);
-  const [authType, setAuthType] = useState<"credentials" | "oauth2">("credentials");
+  const [authType, setAuthType] = useState<"credentials" | "oauth2">(
+    "credentials",
+  );
   const [authFields, setAuthFields] = useState<ConnectionField[]>();
   const [oauthTokens, setOauthTokens] = useState<any>(null);
   const oauthPopupRef = useRef<Window | null>(null);
@@ -33,7 +41,16 @@ export default function ConnectionTester() {
       runnerRef.current = new SandboxRunner();
 
       runnerRef.current.onConsole = (level, args) =>
-        append(level === "info" ? "info" : level === "warn" ? "warn" : level === "debug" ? "debug" : "error", args);
+        append(
+          level === "info"
+            ? "info"
+            : level === "warn"
+              ? "warn"
+              : level === "debug"
+                ? "debug"
+                : "error",
+          args,
+        );
 
       runnerRef.current.onNetworkRequest = async (req, respond) => {
         try {
@@ -41,7 +58,12 @@ export default function ConnectionTester() {
           const { proxyFetch } = await import("@/utils/proxyFetch");
           const r = await proxyFetch(req.url, req.options);
           const text = await r.text();
-          respond({ ok: r.ok, status: r.status, statusText: r.statusText, text });
+          respond({
+            ok: r.ok,
+            status: r.status,
+            statusText: r.statusText,
+            text,
+          });
         } catch (err) {
           respond({ error: String(err) });
         }
@@ -61,15 +83,20 @@ export default function ConnectionTester() {
       await runner.loadConnector(activeFile.content);
 
       // Try to get authType from the connector
-      const connection = await runner.run("connection", {}, { timeoutMs: 5000 });
+      const connection = await runner.run(
+        "connection",
+        {},
+        { timeoutMs: 5000 },
+      );
       const typeOfAuth = connection?.value?.["auth"]?.["type"];
-      const FieldsInAuth = connection?.value?.[typeOfAuth === "credentials" ? "fields" : "credentials"];
+      const credentialsInAuth = connection?.value?.["credentials"];
+      const fieldsInAuth = connection?.value?.["fields"];
       if (typeOfAuth) setAuthType(typeOfAuth);
-      console.log(FieldsInAuth);
-      if (FieldsInAuth) {
-        setAuthFields(FieldsInAuth);
-        if (typeOfAuth === "credentials" && FieldsInAuth?.length === 0)
-          append("warn", ["Auth type is set to credentials but there are no fields available!"]);
+      console.log([...credentialsInAuth, ...fieldsInAuth]);
+      if (credentialsInAuth && fieldsInAuth) {
+        setAuthFields([...credentialsInAuth, ...fieldsInAuth]);
+        if ([...credentialsInAuth, ...fieldsInAuth]?.length === 0)
+          append("warn", ["No credentials and fields available!"]);
       }
     } catch (err) {
       append("warn", ["Could not load authType:", String(err)]);
@@ -135,7 +162,10 @@ export default function ConnectionTester() {
     try {
       // Validate credentials are provided
       if (authFields?.every((field) => !authData[field.name])) {
-        setTestResult({ success: false, error: "All the credentials are required!" });
+        setTestResult({
+          success: false,
+          error: "All the credentials are required!",
+        });
         append("error", ["Oauth credentials are not provided!"]);
         setIsLoading(false);
         return;
@@ -169,7 +199,7 @@ export default function ConnectionTester() {
       const popup = window.open(
         authUrl,
         "OAuth Authorization",
-        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`,
       );
 
       if (!popup) {
@@ -204,15 +234,34 @@ export default function ConnectionTester() {
 
       window.addEventListener("message", messageHandler);
 
+      let lastMessageAt = Date.now();
+      const MAX_IDLE_MS = 5 * 60 * 1000;
+
       // Check if popup was closed manually
       const checkClosed = setInterval(() => {
-        if (popup.closed) {
+        const now = Date.now();
+        if (now - lastMessageAt > MAX_IDLE_MS) {
           clearInterval(checkClosed);
           window.removeEventListener("message", messageHandler);
           if (!oauthTokens) {
             setIsLoading(false);
             append("warn", ["OAuth flow was cancelled"]);
           }
+          return;
+        }
+        try {
+          if (popup.closed) {
+            // clearInterval(checkClosed);
+            // window.removeEventListener("message", messageHandler);
+            // if (!oauthTokens) {
+            //   setIsLoading(false);
+            //   append("warn", ["OAuth flow was cancelled"]);
+            // }
+            lastMessageAt = now;
+          }
+        } catch {
+          // Lost access — expected during cross-origin OAuth
+          // Do nothing
         }
       }, 500);
     } catch (err: any) {
@@ -337,24 +386,33 @@ export default function ConnectionTester() {
       <Card className="flex flex-col flex-1 min-h-0">
         <CardHeader className="flex-shrink-0">
           <CardTitle className="text-sm">Connection Test</CardTitle>
-          <CardDescription className="text-xs">Test the connection authentication for your connector</CardDescription>
+          <CardDescription className="text-xs">
+            Test the connection authentication for your connector
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col flex-1 min-h-0 overflow-auto scrollbar-custom space-y-3 pr-1 mb-5">
           <div className="flex-shrink-0">
             <div className="mb-5">
-              <label className="text-xs text-gray-300 mb-1 block">Connection Name</label>
+              <label className="text-xs text-gray-300 mb-1 block">
+                Connection Name
+              </label>
               <Input
                 type="text"
                 name="connectionName"
                 placeholder="Enter connection name"
                 value={connectionName}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConnectionName(e?.target?.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setConnectionName(e?.target?.value)
+                }
                 maxLength={30}
               />
             </div>
             {authFields?.map((field) => (
               <div key={field.name} className="mb-5">
-                <label key={field.name} className="text-xs text-gray-300 mb-1 block">
+                <label
+                  key={field.name}
+                  className="text-xs text-gray-300 mb-1 block"
+                >
                   {field?.label || field.name}
                 </label>
                 <Input
@@ -364,7 +422,10 @@ export default function ConnectionTester() {
                   placeholder={field?.placeholder || `Enter ${field.name}`}
                   value={authData?.[field.name]}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setAuthData((prev: any) => ({ ...prev, [field.name]: e.target.value }))
+                    setAuthData((prev: any) => ({
+                      ...prev,
+                      [field.name]: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -388,24 +449,30 @@ export default function ConnectionTester() {
                 </Badge>
               </div>
               <div className="flex-1 min-h-32">
-                <JsonViewer data={testResult.result || testResult.error} height="200px" />
+                <JsonViewer
+                  data={testResult.result || testResult.error}
+                  height="200px"
+                />
               </div>
-              {testResult?.success && (testResult?.result?.["validated"] || testResult?.tokens) && (
-                <div className="w-full mt-2 gap-3 flex-shrink-0">
-                  {!isConnectionSaved ? (
-                    <Button
-                      className="border border-slate-700 rounded-lg w-full"
-                      onClick={saveConnection}
-                      disabled={isConnectionSaved || !connectionName}
-                      size="sm"
-                    >
-                      Save connection
-                    </Button>
-                  ) : (
-                    <div className="text-green-500 text-sm">Connection Saved!</div>
-                  )}
-                </div>
-              )}
+              {testResult?.success &&
+                (testResult?.result?.["validated"] || testResult?.tokens) && (
+                  <div className="w-full mt-2 gap-3 flex-shrink-0">
+                    {!isConnectionSaved ? (
+                      <Button
+                        className="border border-slate-700 rounded-lg w-full"
+                        onClick={saveConnection}
+                        disabled={isConnectionSaved || !connectionName}
+                        size="sm"
+                      >
+                        Save connection
+                      </Button>
+                    ) : (
+                      <div className="text-green-500 text-sm">
+                        Connection Saved!
+                      </div>
+                    )}
+                  </div>
+                )}
             </div>
           )}
         </CardContent>
