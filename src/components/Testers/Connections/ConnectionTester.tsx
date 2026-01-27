@@ -234,34 +234,15 @@ export default function ConnectionTester() {
 
       window.addEventListener("message", messageHandler);
 
-      let lastMessageAt = Date.now();
-      const MAX_IDLE_MS = 5 * 60 * 1000;
-
       // Check if popup was closed manually
       const checkClosed = setInterval(() => {
-        const now = Date.now();
-        if (now - lastMessageAt > MAX_IDLE_MS) {
+        if (popup.closed) {
           clearInterval(checkClosed);
           window.removeEventListener("message", messageHandler);
           if (!oauthTokens) {
             setIsLoading(false);
             append("warn", ["OAuth flow was cancelled"]);
           }
-          return;
-        }
-        try {
-          if (popup.closed) {
-            // clearInterval(checkClosed);
-            // window.removeEventListener("message", messageHandler);
-            // if (!oauthTokens) {
-            //   setIsLoading(false);
-            //   append("warn", ["OAuth flow was cancelled"]);
-            // }
-            lastMessageAt = now;
-          }
-        } catch {
-          // Lost access — expected during cross-origin OAuth
-          // Do nothing
         }
       }, 500);
     } catch (err: any) {
