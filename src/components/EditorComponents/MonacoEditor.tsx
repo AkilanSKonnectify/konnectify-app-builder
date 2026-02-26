@@ -15,7 +15,13 @@ interface MonacoEditorProps {
 
 const editorModels = new Map<string, editor.ITextModel>();
 
-export default function MonacoEditor({ fileId, code, onChange, filename, language = "typescript" }: MonacoEditorProps) {
+export default function MonacoEditor({
+  fileId,
+  code,
+  onChange,
+  filename,
+  language = "typescript",
+}: MonacoEditorProps) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof import("monaco-editor") | null>(null);
 
@@ -34,25 +40,36 @@ export default function MonacoEditor({ fileId, code, onChange, filename, languag
 
     if (!model) {
       const uri = monaco.Uri.parse(`file:///${fileId}`);
-      model = monaco.editor.getModel(uri) || monaco.editor.createModel(code, language, uri);
-      editorModels.set(fileId, model);
+      model =
+        monaco.editor.getModel(uri) ||
+        monaco.editor.createModel(code, language, uri);
+      if (model) {
+        editorModels.set(fileId, model);
+      }
     }
 
-    if (model.isDisposed()) {
+    if (model && model.isDisposed()) {
       const uri = monaco.Uri.parse(`file:///${fileId}`);
       model = monaco.editor.createModel(code, language, uri); // recreate
-      editorModels.set(fileId, model);
+      if (model) {
+        editorModels.set(fileId, model);
+      }
     }
 
-    editor.setModel(model);
+    if (model) {
+      editor.setModel(model);
+    }
 
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyZ, () => {
       editor.trigger("keyboard", "undo", {});
     });
 
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyZ, () => {
-      editor.trigger("keyboard", "redo", {});
-    });
+    editor.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyZ,
+      () => {
+        editor.trigger("keyboard", "redo", {});
+      },
+    );
 
     editor.focus();
   };
@@ -65,7 +82,9 @@ export default function MonacoEditor({ fileId, code, onChange, filename, languag
         editorRef.current.setModel(model);
       } else {
         const uri = monacoRef.current.Uri.parse(`file:///${fileId}`);
-        model = monacoRef.current.editor.getModel(uri) || monacoRef.current.editor.createModel(code, language, uri);
+        model =
+          monacoRef.current.editor.getModel(uri) ||
+          monacoRef.current.editor.createModel(code, language, uri);
         editorModels.set(fileId, model);
         editorRef.current.setModel(model);
       }

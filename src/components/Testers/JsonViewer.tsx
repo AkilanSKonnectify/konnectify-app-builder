@@ -14,7 +14,11 @@ interface JsonViewerProps {
 
 const editorModels = new Map<string, editor.ITextModel>();
 
-export default function JsonViewer({ data, className, height = "100%" }: JsonViewerProps) {
+export default function JsonViewer({
+  data,
+  className,
+  height = "100%",
+}: JsonViewerProps) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof import("monaco-editor") | null>(null);
   const [copied, setCopied] = useState(false);
@@ -36,18 +40,26 @@ export default function JsonViewer({ data, className, height = "100%" }: JsonVie
     if (!model) {
       const uri = monaco.Uri.parse(`file:///${fileId}`);
       const jsonString = JSON.stringify(data, null, 2);
-      model = monaco.editor.getModel(uri) || monaco.editor.createModel(jsonString, "json", uri);
-      editorModels.set(fileId, model);
+      model =
+        monaco.editor.getModel(uri) ||
+        monaco.editor.createModel(jsonString, "json", uri);
+      if (model) {
+        editorModels.set(fileId, model);
+      }
     }
 
-    if (model.isDisposed()) {
+    if (model && model.isDisposed()) {
       const uri = monaco.Uri.parse(`file:///${fileId}`);
       const jsonString = JSON.stringify(data, null, 2);
       model = monaco.editor.createModel(jsonString, "json", uri);
-      editorModels.set(fileId, model);
+      if (model) {
+        editorModels.set(fileId, model);
+      }
     }
 
-    editor.setModel(model);
+    if (model) {
+      editor.setModel(model);
+    }
     editor.updateOptions({ readOnly: true });
   };
 
@@ -97,7 +109,9 @@ export default function JsonViewer({ data, className, height = "100%" }: JsonVie
       } else {
         const uri = monacoRef.current.Uri.parse(`file:///${fileId}`);
         const jsonString = JSON.stringify(data, null, 2);
-        model = monacoRef.current.editor.getModel(uri) || monacoRef.current.editor.createModel(jsonString, "json", uri);
+        model =
+          monacoRef.current.editor.getModel(uri) ||
+          monacoRef.current.editor.createModel(jsonString, "json", uri);
         editorModels.set(fileId, model);
         editorRef.current.setModel(model);
       }
@@ -113,7 +127,9 @@ export default function JsonViewer({ data, className, height = "100%" }: JsonVie
       <div
         className={cn(
           "absolute top-2 right-2 z-10 transition-opacity duration-200",
-          isHovered ? "opacity-50 pointer-events-auto" : "opacity-0 pointer-events-none"
+          isHovered
+            ? "opacity-50 pointer-events-auto"
+            : "opacity-0 pointer-events-none",
         )}
       >
         <button
@@ -121,11 +137,15 @@ export default function JsonViewer({ data, className, height = "100%" }: JsonVie
           className={cn(
             "p-1.5 rounded bg-[#2d2d30] hover:bg-[#3e3e42] text-gray-300 hover:text-white transition-colors",
             "border border-[#1e1e1e] flex items-center justify-center",
-            "focus:outline-none focus:ring-2 focus:ring-[#0e639c] focus:ring-offset-1"
+            "focus:outline-none focus:ring-2 focus:ring-[#0e639c] focus:ring-offset-1",
           )}
           title="Copy to clipboard"
         >
-          {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+          {copied ? (
+            <Check size={14} className="text-green-400" />
+          ) : (
+            <Copy size={14} />
+          )}
         </button>
       </div>
       <div style={{ height }}>

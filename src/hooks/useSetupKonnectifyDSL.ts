@@ -1,6 +1,6 @@
 "use client";
 
-import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
+import * as monaco from "monaco-editor";
 
 type Monaco = typeof monaco;
 
@@ -353,14 +353,18 @@ export interface SchemaOptions {
   if (!monaco.editor.getModel(dslUri)) {
     monaco.editor.createModel(dslContent, "typescript", dslUri);
   }
-  monaco.languages.typescript.typescriptDefaults.addExtraLib(dslContent, "file:///src/dsl/konnectify-dsl.ts");
+  (monaco.languages.typescript as any).typescriptDefaults.addExtraLib(
+    dslContent,
+    "file:///src/dsl/konnectify-dsl.ts",
+  );
 
-  monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.Classic,
-    target: monaco.languages.typescript.ScriptTarget.ESNext,
+  (monaco.languages.typescript as any).typescriptDefaults.setCompilerOptions({
+    moduleResolution: (monaco.languages.typescript as any).ModuleResolutionKind
+      .Classic,
+    target: (monaco.languages.typescript as any).ScriptTarget.ESNext,
     allowJs: true,
     strict: true,
-    jsx: monaco.languages.typescript.JsxEmit.React,
+    jsx: (monaco.languages.typescript as any).JsxEmit.React,
     typeRoots: ["file:///node_modules/@types"], // helps keep hover info for JS/TS globals
     baseUrl: "file:///",
     paths: {
@@ -368,5 +372,7 @@ export interface SchemaOptions {
     },
   });
 
-  monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+  (monaco.languages.typescript as any).typescriptDefaults.setEagerModelSync(
+    true,
+  );
 }

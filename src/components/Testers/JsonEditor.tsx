@@ -47,17 +47,25 @@ export default function JsonEditor({
 
     if (!model) {
       const uri = monaco.Uri.parse(`file:///${fileId}`);
-      model = monaco.editor.getModel(uri) || monaco.editor.createModel(value || placeholder, language, uri);
-      editorModels.set(fileId, model);
+      model =
+        monaco.editor.getModel(uri) ||
+        monaco.editor.createModel(value || placeholder, language, uri);
+      if (model) {
+        editorModels.set(fileId, model);
+      }
     }
 
-    if (model.isDisposed()) {
+    if (model && model.isDisposed()) {
       const uri = monaco.Uri.parse(`file:///${fileId}`);
       model = monaco.editor.createModel(value || placeholder, language, uri);
-      editorModels.set(fileId, model);
+      if (model) {
+        editorModels.set(fileId, model);
+      }
     }
 
-    editor.setModel(model);
+    if (model) {
+      editor.setModel(model);
+    }
     editor.updateOptions({ readOnly: false });
 
     // Dispose previous listener if it exists
@@ -66,12 +74,14 @@ export default function JsonEditor({
     }
 
     // Listen to content changes - use a disposable to avoid multiple listeners
-    changeListenerRef.current = model.onDidChangeContent(() => {
-      if (!isUpdatingFromProps.current) {
-        const currentValue = model?.getValue() || "";
-        onChange(currentValue);
-      }
-    });
+    if (model) {
+      changeListenerRef.current = model.onDidChangeContent(() => {
+        if (!isUpdatingFromProps.current) {
+          const currentValue = model?.getValue() || "";
+          onChange(currentValue);
+        }
+      });
+    }
   };
 
   const handleCopy = async () => {
@@ -168,7 +178,11 @@ export default function JsonEditor({
         const uri = monacoRef.current.Uri.parse(`file:///${fileId}`);
         model =
           monacoRef.current.editor.getModel(uri) ||
-          monacoRef.current.editor.createModel(value || placeholder, language, uri);
+          monacoRef.current.editor.createModel(
+            value || placeholder,
+            language,
+            uri,
+          );
         editorModels.set(fileId, model);
         editorRef.current.setModel(model);
       }
@@ -200,14 +214,19 @@ export default function JsonEditor({
 
   return (
     <div
-      className={cn("relative bg-gray-800 rounded border border-gray-700", className)}
+      className={cn(
+        "relative bg-gray-800 rounded border border-gray-700",
+        className,
+      )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
         className={cn(
           "absolute top-2 right-2 z-10 flex gap-1 transition-opacity duration-200",
-          isHovered ? "opacity-50 pointer-events-auto" : "opacity-0 pointer-events-none"
+          isHovered
+            ? "opacity-50 pointer-events-auto"
+            : "opacity-0 pointer-events-none",
         )}
       >
         <button
@@ -215,7 +234,7 @@ export default function JsonEditor({
           className={cn(
             "p-1.5 rounded bg-[#2d2d30] hover:bg-[#3e3e42] text-gray-300 hover:text-white transition-colors",
             "border border-[#1e1e1e] flex items-center justify-center",
-            "focus:outline-none focus:ring-2 focus:ring-[#0e639c] focus:ring-offset-1"
+            "focus:outline-none focus:ring-2 focus:ring-[#0e639c] focus:ring-offset-1",
           )}
           title="Format JSON"
         >
@@ -226,11 +245,15 @@ export default function JsonEditor({
           className={cn(
             "p-1.5 rounded bg-[#2d2d30] hover:bg-[#3e3e42] text-gray-300 hover:text-white transition-colors",
             "border border-[#1e1e1e] flex items-center justify-center",
-            "focus:outline-none focus:ring-2 focus:ring-[#0e639c] focus:ring-offset-1"
+            "focus:outline-none focus:ring-2 focus:ring-[#0e639c] focus:ring-offset-1",
           )}
           title="Copy to clipboard"
         >
-          {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+          {copied ? (
+            <Check size={14} className="text-green-400" />
+          ) : (
+            <Copy size={14} />
+          )}
         </button>
       </div>
       <div style={{ height }}>
