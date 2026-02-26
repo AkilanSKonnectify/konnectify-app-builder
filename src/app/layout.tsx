@@ -23,7 +23,7 @@ export default function RootLayout({
     script.async = true;
     script.onload = function() {
     window.konnectify.init({
-        endpoint: "https://akilan.stack2.us.konnectify.dev/tracking/12408/website-tracker",
+        endpoint: "https://akilan.stack2.us.konnectify.dev/tracking/12415/website-tracker",
         apiKey: "YOUR_KONNECTOR_ID_HERE",
         batchSize: 10,
         batchTimeout: 30000,
